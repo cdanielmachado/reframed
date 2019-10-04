@@ -22,6 +22,9 @@ class Gene(object):
     def __str__(self):
         return self.name
 
+    def __repr__(self):
+        return str(self)
+
 
 class Protein(object):
     """ Base class for modeling proteins.
@@ -40,6 +43,9 @@ class Protein(object):
             protein_str = '(' + protein_str + ')'
 
         return protein_str
+
+    def __repr__(self):
+        return str(self)
 
 
 class GPRAssociation(object):
@@ -61,6 +67,9 @@ class GPRAssociation(object):
             gpr_str = '(' + gpr_str + ')'
 
         return gpr_str
+
+    def __repr__(self):
+        return str(self)
 
     def get_genes(self):
         """ Return the set of all associated genes. """
@@ -152,6 +161,9 @@ class CBReaction(Reaction):
 
     def __str__(self):
         return self.to_string()
+
+    def __repr__(self):
+        return str(self)
 
 
 class CBModel(Model):

@@ -14,6 +14,9 @@ class Environment(AttrOrderedDict):
         entries = ('\t'.join([r_id, lb, ub]) for r_id, (lb, ub) in self.bounds.items())
         return '\n'.join(entries)
 
+    def __repr__(self):
+        return str(self)
+
     def get_compounds(self, fmt_func=None):
         """
         Return the list of compounds in the growth medium for this environment.

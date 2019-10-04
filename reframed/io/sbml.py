@@ -312,7 +312,7 @@ def reaction_type_detection(reaction, substrates, products, sbml_model, exchange
         right_boundary = all(sbml_model.getSpecies(m_id).getBoundaryCondition() for m_id in products)
         is_exchange = left_boundary or right_boundary
     elif isinstance(exchange_detection, re_type):
-        is_exchange = exchange_detection.match(reaction.getId()) is not None
+        is_exchange = exchange_detection.search(reaction.getId()) is not None
     else:
         is_exchange = False
 

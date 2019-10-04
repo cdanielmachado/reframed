@@ -88,12 +88,13 @@ def make_irreversible(model, inplace=True, reactions=None):
         return model
 
 
-def simplify(model, reactions=None, clean_compartments=True, inplace=True):
+def simplify(model, reactions=None, constraints=None, clean_compartments=True, inplace=True):
     """ Removes all blocked reactions in a constraint based model
 
     Arguments:
         model (CBModel): model
         reactions (list): List of reactions which will be checked for being blocked (default: None - check all reactions)
+        constraints (dict): additional constraints (optional)
         clean_compartments (bool): remove empty compartments (default: True)
         inplace (bool): change model in place (default), otherwise create a copy first
 
@@ -104,7 +105,7 @@ def simplify(model, reactions=None, clean_compartments=True, inplace=True):
     if not inplace:
         model = model.copy()
 
-    model.remove_reactions(blocked_reactions(model, reactions=reactions))
+    model.remove_reactions(blocked_reactions(model, reactions=reactions, constraints=constraints))
     model.remove_metabolites(disconnected_metabolites(model), safe_delete=False)
     model.remove_genes(disconnected_genes(model))
     if clean_compartments:

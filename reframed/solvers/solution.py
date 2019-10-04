@@ -18,7 +18,7 @@ def print_values(value_dict, pattern=None, sort=False, abstol=1e-9):
 
     if pattern:
         re_expr = re.compile(pattern)
-        values = [x for x in values if re_expr.match(x[0]) is not None]
+        values = [x for x in values if re_expr.search(x[0]) is not None]
 
     if sort:
         values.sort(key=lambda x: x[1])
@@ -82,6 +82,9 @@ class Solution(object):
 
     def __str__(self):
         return f"Objective: {self.fobj}\nStatus: {self.status.value}\n"
+
+    def __repr__(self):
+        return str(self)
 
     def show_values(self, pattern=None, sort=False, abstol=1e-9):
         """ Show solution results.

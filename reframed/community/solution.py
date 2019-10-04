@@ -19,6 +19,9 @@ class CommunitySolution(object):
         abundance = "\n".join(f"{org_id}\t{val}" for org_id, val in self.abundance.items())
         return growth + abundance
 
+    def __repr__(self):
+        return str(self)
+
     @property
     def exchange_map(self):
         if self._exchange_map is None:

@@ -3,6 +3,7 @@ from collections import OrderedDict
 from copy import copy, deepcopy
 from .parser import ReactionParser
 from warnings import warn
+import re
 
 
 class Compartment(object):
@@ -25,6 +26,9 @@ class Compartment(object):
     def __str__(self):
         return self.name
 
+    def __repr__(self):
+        return str(self)
+
 
 class Metabolite(object):
     """ Base class for modeling metabolites. """
@@ -43,6 +47,9 @@ class Metabolite(object):
 
     def __str__(self):
         return self.name
+
+    def __repr__(self):
+        return str(self)
 
 
 class ReactionType(Enum):
@@ -90,6 +97,9 @@ class Reaction(object):
 
     def __str__(self):
         return self.to_string()
+
+    def __repr__(self):
+        return str(self)
 
     def get_substrates(self):
         """ Get list of reaction substrates
@@ -461,6 +471,38 @@ class Model(object):
                 warn(f"No such reaction {r_id}")
         self._needs_update = True
 
+    def search_metabolites(self, pattern, by_name=False, ignore_case=False):
+        """ Search metabolites in model.
+
+        Arguments:
+            pattern (str): regular expression pattern
+            by_name (bool): search by metabolite name instead of id (default: False)
+            ignore_case (bool): case-insensitive search (default: False)
+        """
+
+        re_expr = re.compile(pattern, flags=re.IGNORECASE) if ignore_case else re.compile(pattern)
+
+        if by_name:
+            return [m_id for m_id, met in self.metabolites.items() if re_expr.search(met.name) is not None]
+        else:
+            return [m_id for m_id in self.metabolites if re_expr.search(m_id) is not None]
+
+    def search_reactions(self, pattern, by_name=False, ignore_case=False):
+        """ Search reactions in model.
+
+        Arguments:
+            pattern (str): regular expression pattern
+            by_name (bool): search by reaction name (case insensitive) instead of id (default: False)
+            ignore_case (bool): case-insensitive search (default: False)
+        """
+
+        re_expr = re.compile(pattern, flags=re.IGNORECASE) if ignore_case else re.compile(pattern)
+
+        if by_name:
+            return [r_id for r_id, rxn in self.reactions.items() if re_expr.search(rxn.name) is not None]
+        else:
+            return [r_id for r_id in self.reactions if re_expr.search(r_id) is not None]
+
     def metabolite_reaction_lookup(self):
         if not self._m_r_lookup or self._needs_update:
             self._m_r_lookup = {m_id: {} for m_id in self.metabolites}
@@ -527,3 +569,7 @@ class Model(object):
 
     def __str__(self):
         return self.to_string()
+
+    def __repr__(self):
+        return str(self)
+
