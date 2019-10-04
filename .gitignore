@@ -1,0 +1,4 @@
+
+.idea/*
+reframed.egg-info/*
+*.pyc
