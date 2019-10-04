@@ -9,7 +9,7 @@ def fix_reversibility(model):
     """ Make reaction reversibility consistent with the bounds. """
 
     for reaction in model.reactions.values():
-        reaction.reversible = (reaction.lb is None or reaction.lb < 0)
+        reaction.reversible = reaction.lb < 0
 
 
 def clean_bounds(model, threshold=1000):
@@ -81,7 +81,11 @@ def make_irreversible(model, inplace=True, reactions=None):
             model.add_reaction(r_bwd)
             model.remove_reaction(r_id)
 
-    return mapping
+    if inplace:
+        return mapping
+    else:
+        model.mapping = mapping
+        return model
 
 
 def simplify(model, reactions=None, clean_compartments=True, inplace=True):

@@ -312,7 +312,7 @@ class CBModel(Model):
 
             if safe_delete:
                 for r_id in g_r_lookup[gene_id]:
-                    self.reactions.gpr.remove_gene(gene_id)
+                    self.reactions[r_id].gpr.remove_gene(gene_id)
 
     def remove_ratio_constraint(self, r_num, r_den):
         """ Remove a flux ratio constraint from the model.
@@ -385,7 +385,7 @@ class CBModel(Model):
 
         """
         if not self._g_r_lookup:
-            self._g_r_lookup = {g_id: {} for g_id in self.genes}
+            self._g_r_lookup = {g_id: [] for g_id in self.genes}
 
             for r_id, rxn in self.reactions.items():
                 genes = rxn.get_genes()

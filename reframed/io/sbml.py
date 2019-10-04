@@ -1,6 +1,7 @@
 import libsbml as sb
 from ..core.model import Model, Metabolite, Reaction, Compartment, ReactionType, RegulatorType
 from ..core.cbmodel import CBModel, Gene, Protein, GPRAssociation, CBReaction
+from ..core.transformation import fix_reversibility, clean_bounds
 from enum import Enum
 from collections import OrderedDict
 from math import inf, isinf, isnan
@@ -48,7 +49,7 @@ class ExchangeDetection(Enum):
 DEFAULT_SBML_LEVEL = 3
 DEFAULT_SBML_VERSION = 1
 
-non_alphanum = re.compile('\W+')
+non_alphanum = re.compile(r'\W+')
 re_type = type(non_alphanum)
 
 
@@ -96,7 +97,7 @@ def load_model(filename):
 
 
 def load_cbmodel(filename, flavor=None, exchange_detection=None, external_compartment=True,
-                 load_gprs=True, load_metadata=True):
+                 load_gprs=True, load_metadata=True, reversibility_check=True, use_infinity=True):
     """ Loads a constraint-based model.
 
     Arguments:
@@ -106,6 +107,8 @@ def load_cbmodel(filename, flavor=None, exchange_detection=None, external_compar
         external_compartment (bool or str): identify external compartment (optional, see Notes)
         load_gprs (bool): load GPR associations (default: True)
         load_metadata (bool): load metadata from annotations field (default: True)
+        reversibility_check (bool): fix consistency between reversibility attribute and lower bounds (default: True)
+        use_infinity (bool): replace large bounds with +/- infinity (default: True)
 
     Notes:
         Currently supported flavors:
@@ -129,7 +132,7 @@ def load_cbmodel(filename, flavor=None, exchange_detection=None, external_compar
 
     if exchange_detection is None:
         if flavor == Flavor.BIGG.value:
-            exchange_detection = re.compile('^R_EX')
+            exchange_detection = re.compile(r'^R_EX')
         else:
             exchange_detection = 'unbalanced'
     elif exchange_detection not in {'unbalanced', 'boundary'}:
@@ -184,6 +187,12 @@ def load_cbmodel(filename, flavor=None, exchange_detection=None, external_compar
                 warn("Multiple external compartments detected.")
             elif len(external_comps) == 0:
                 warn("No external compartments detected.")
+
+    if reversibility_check:
+        fix_reversibility(model)
+
+    if use_infinity:
+        clean_bounds(model)
 
     return model
 
@@ -638,12 +647,12 @@ def save_cobra_parameters(model, sbml_model):
         kineticLaw = sbml_reaction.createKineticLaw()
         kineticLaw.setFormula('0')
 
-        lb = CobraDefaults.DEFAULT_LOWER_BOUND.value if isinf(reaction.lb) else reaction.lb
+        lb = CobraDefaults.LOWER_BOUND.value if isinf(reaction.lb) else reaction.lb
         lbParameter = kineticLaw.createParameter()
         lbParameter.setId(CobraTags.LB_TAG.value)
         lbParameter.setValue(lb)
 
-        ub = CobraDefaults.DEFAULT_UPPER_BOUND.value if isinf(reaction.ub) else reaction.ub
+        ub = CobraDefaults.UPPER_BOUND.value if isinf(reaction.ub) else reaction.ub
         ubParameter = kineticLaw.createParameter()
         ubParameter.setId(CobraTags.UB_TAG.value)
         ubParameter.setValue(ub)

@@ -2,7 +2,7 @@ import re
 from warnings import warn
 
 
-ELEMENT_RE = re.compile('(?P<atom>[A-Z][a-z]?)(?P<coeff>\d*)')
+ELEMENT_RE = re.compile(r'(?P<atom>[A-Z][a-z]?)(?P<coeff>\d*)')
 
 ATOMIC_WEIGHTS = {
     'H': 1.0079, 'He': 4.0026, 'Li': 6.941, 'Be': 9.0122, 'B': 10.811, 'C': 12.0107, 'N': 14.0067, 'O': 15.9994,
