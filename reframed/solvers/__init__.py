@@ -13,6 +13,7 @@ try:
 except ImportError:
     pass
 
+from .solver import Parameter
 
 default_solver = None
 
@@ -41,7 +42,7 @@ def set_default_solver(solvername):
     """ Sets default solver.
 
     Arguments:
-        solvername : str -- solver name (currently available: 'gurobi', 'cplex')
+        solvername : (str) solver name (currently available: 'gurobi', 'cplex')
     """
 
     global default_solver

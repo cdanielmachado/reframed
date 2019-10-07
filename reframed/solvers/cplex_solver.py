@@ -1,6 +1,6 @@
 
 from collections import Iterable
-from .solver import Solver, VarType, Parameter
+from .solver import Solver, VarType, Parameter, default_parameters
 from .solution import Solution, Status
 from cplex import Cplex, infinity, SparsePair
 import sys
@@ -53,6 +53,8 @@ class CplexSolver(Solver):
             Parameter.POOL_GAP: self.problem.parameters.mip.pool.relgap
 
         }
+
+        self.set_parameters(default_parameters)
 
         self.set_logging()
         self._cached_lin_obj = {}
@@ -278,7 +280,7 @@ class CplexSolver(Solver):
         self.add_constraints(constr_ids, lhs, senses, rhs)
 
     def solve(self, linear=None, quadratic=None, minimize=None, model=None, constraints=None, get_values=True,
-              get_shadow_prices=False, get_reduced_costs=False, pool_size=0, pool_gap=None):
+              shadow_prices=False, reduced_costs=False, pool_size=0, pool_gap=None):
         """ Solve the optimization problem.
 
         Arguments:
@@ -288,8 +290,8 @@ class CplexSolver(Solver):
             model (CBModel): model (optional, leave blank to reuse previous model structure)
             constraints (dict): additional constraints (optional)
             get_values (bool or list): set to false for speedup if you only care about the objective value (default: True)
-            get_shadow_prices (bool): return shadow prices if available (default: False)
-            get_reduced_costs (bool): return reduced costs if available (default: False)
+            shadow_prices (bool): return shadow prices if available (default: False)
+            reduced_costs (bool): return reduced costs if available (default: False)
             pool_size (int): calculate solution pool of given size (only for MILP problems)
             pool_gap (float): maximum relative gap for solutions in pool (optional)
 
@@ -318,7 +320,7 @@ class CplexSolver(Solver):
 
             if status == Status.OPTIMAL:
                 fobj = problem.solution.get_objective_value()
-                values, shadow_prices, reduced_costs = None, None, None
+                values, s_prices, r_costs = None, None, None
 
                 if get_values:
                     if isinstance(get_values, Iterable):
@@ -327,13 +329,13 @@ class CplexSolver(Solver):
                     else:
                         values = dict(zip(self.var_ids, problem.solution.get_values()))
 
-                if get_shadow_prices:
-                    shadow_prices = dict(zip(self.constr_ids, problem.solution.get_dual_values(self.constr_ids)))
+                if shadow_prices:
+                    s_prices = dict(zip(self.constr_ids, problem.solution.get_dual_values(self.constr_ids)))
 
-                if get_reduced_costs:
-                    reduced_costs = dict(zip(self.var_ids, problem.solution.get_reduced_costs(self.var_ids)))
+                if reduced_costs:
+                    r_costs = dict(zip(self.var_ids, problem.solution.get_reduced_costs(self.var_ids)))
 
-                solution = Solution(status, message, fobj, values, shadow_prices, reduced_costs)
+                solution = Solution(status, message, fobj, values, s_prices, r_costs)
             else:
                 solution = Solution(status, message)
 

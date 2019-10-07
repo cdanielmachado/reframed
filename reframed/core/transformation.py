@@ -93,7 +93,7 @@ def simplify(model, reactions=None, constraints=None, clean_compartments=True, i
 
     Arguments:
         model (CBModel): model
-        reactions (list): List of reactions which will be checked for being blocked (default: None - check all reactions)
+        reactions (list): List of reactions that can be tested for removal (default: test all reactions)
         constraints (dict): additional constraints (optional)
         clean_compartments (bool): remove empty compartments (default: True)
         inplace (bool): change model in place (default), otherwise create a copy first

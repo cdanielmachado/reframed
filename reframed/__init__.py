@@ -7,7 +7,7 @@ __email__ = 'cdanielmachado@gmail.com'
 __version__ = '0.1.0'
 
 
-from .core.model import Model, Metabolite, Compartment, Reaction
+from .core.model import Model, Metabolite, Compartment, Reaction, ReactionType
 from .core.cbmodel import CBReaction, Gene, Protein, GPRAssociation, CBModel
 from .core.environment import Environment
 from .core.transformation import make_irreversible, simplify

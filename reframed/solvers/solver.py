@@ -21,6 +21,12 @@ class Parameter(Enum):
     POOL_GAP = 7
 
 
+default_parameters = {
+    Parameter.FEASIBILITY_TOL: 1e-9,
+    Parameter.OPTIMALITY_TOL: 1e-9,
+}
+
+
 class Solver(object):
     """ Abstract class representing a generic solver.
 
@@ -31,8 +37,7 @@ class Solver(object):
         self.problem = None
         self.var_ids = []
         self.constr_ids = []
-        if model:
-            self.build_problem(model)
+        self.model = model
 
     def add_variable(self, var_id, lb=-inf, ub=inf, vartype=VarType.CONTINUOUS, update=True):
         """ Add a variable to the current problem.
@@ -140,7 +145,7 @@ class Solver(object):
         self.update()
 
     def solve(self, linear=None, quadratic=None, minimize=None, model=None, constraints=None, get_values=True,
-              get_shadow_prices=False, get_reduced_costs=False, pool_size=0, pool_gap=None):
+              shadow_prices=False, reduced_costs=False, pool_size=0, pool_gap=None):
         """ Solve the optimization problem.
 
         Arguments:
@@ -150,8 +155,8 @@ class Solver(object):
             model (CBModel): model (optional, leave blank to reuse previous model structure)
             constraints (dict): additional constraints (optional)
             get_values (bool or list): set to false for speedup if you only care about the objective value (default: True)
-            get_shadow_prices (bool): return shadow prices if available (default: False)
-            get_reduced_costs (bool): return reduced costs if available (default: False)
+            shadow_prices (bool): return shadow prices if available (default: False)
+            reduced_costs (bool): return reduced costs if available (default: False)
             pool_size (int): calculate solution pool of given size (only for MILP problems)
             pool_gap (float): maximum relative gap for solutions in pool (optional)
 

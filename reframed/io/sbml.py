@@ -96,7 +96,7 @@ def load_model(filename):
     return model
 
 
-def load_cbmodel(filename, flavor=None, exchange_detection=None, external_compartment=True,
+def load_cbmodel(filename, flavor=Flavor.FBC2.value, exchange_detection=None, external_compartment=True,
                  load_gprs=True, load_metadata=True, reversibility_check=True, use_infinity=True):
     """ Loads a constraint-based model.
 
@@ -132,7 +132,7 @@ def load_cbmodel(filename, flavor=None, exchange_detection=None, external_compar
 
     if exchange_detection is None:
         if flavor == Flavor.BIGG.value:
-            exchange_detection = re.compile(r'^R_EX')
+            exchange_detection = re.compile(r'^R_EX_')
         else:
             exchange_detection = 'unbalanced'
     elif exchange_detection not in {'unbalanced', 'boundary'}:
@@ -145,10 +145,7 @@ def load_cbmodel(filename, flavor=None, exchange_detection=None, external_compar
     model = CBModel(sbml_model.getId())
     load_compartments(sbml_model, model, load_metadata)
     load_metabolites(sbml_model, model, flavor, load_metadata)
-    load_reactions(sbml_model, model, True, exchange_detection, load_metadata)
-
-    if flavor is None:
-        flavor = Flavor.FBC2.value
+    load_reactions(sbml_model, model, True, load_metadata)
 
     if flavor == Flavor.COBRA.value:
         load_cobra_bounds(sbml_model, model)
@@ -164,29 +161,14 @@ def load_cbmodel(filename, flavor=None, exchange_detection=None, external_compar
     else:
         warn(f"Invalid flavor {flavor}. Current options are: 'cobra', 'fbc2', and 'bigg'.")
 
+    for r_id, reaction in model.reactions.items():
+        reaction.reaction_type = reaction_type_detection(r_id, model, sbml_model, exchange_detection)
+
     if exchange_detection is not None and len(model.get_exchange_reactions()) == 0:
         warn("Exchange reactions were not detected.")
 
     if external_compartment is not None:
-        if isinstance(external_compartment, str):
-            if external_compartment in model.compartments:
-                model.compartments[external_compartment].external = True
-            else:
-                raise RuntimeError(f"Compartment {external_compartment} not in the model.")
-        elif isinstance(external_compartment, bool) and external_compartment is True:
-            external_comps = {
-                model.metabolites[m_id].compartment
-                for r_id in model.get_exchange_reactions()
-                for m_id in model.reactions[r_id].stoichiometry
-            }
-
-            for c_id in external_comps:
-                model.compartments[c_id].external = True
-
-            if len(external_comps) > 1:
-                warn("Multiple external compartments detected.")
-            elif len(external_comps) == 0:
-                warn("No external compartments detected.")
+        detect_external_compartment(model, external_compartment)
 
     if reversibility_check:
         fix_reversibility(model)
@@ -195,6 +177,24 @@ def load_cbmodel(filename, flavor=None, exchange_detection=None, external_compar
         clean_bounds(model)
 
     return model
+
+
+def detect_external_compartment(model, external_compartment):
+    if isinstance(external_compartment, str):
+        if external_compartment in model.compartments:
+            model.compartments[external_compartment].external = True
+        else:
+            raise RuntimeError(f"Compartment {external_compartment} not in the model.")
+    elif isinstance(external_compartment, bool) and external_compartment is True:
+
+        m_r_lookup = model.metabolite_reaction_lookup()
+        ext_comps = [model.metabolites[m_id].compartment
+                     for m_id, r_ids in m_r_lookup.items() for r_id in r_ids
+                     if model.reactions[r_id].reaction_type == ReactionType.EXCHANGE]
+
+        ext_comp = max(set(ext_comps), key=ext_comps.count)
+
+        model.compartments[ext_comp].external = True
 
 
 def load_compartments(sbml_model, model, load_metadata=True):
@@ -238,13 +238,13 @@ def load_metabolite(species, flavor=None, load_metadata=True):
     return metabolite
 
 
-def load_reactions(sbml_model, model, cb=False, exchange_detection=None, load_metadata=True):
+def load_reactions(sbml_model, model, cb=False, load_metadata=True):
     for reaction in sbml_model.getListOfReactions():
-        rxn = load_reaction(reaction, sbml_model, cb, exchange_detection, load_metadata)
+        rxn = load_reaction(reaction, cb, load_metadata)
         model.add_reaction(rxn)
 
 
-def load_reaction(reaction, sbml_model, cb=False, exchange_detection=None, load_metadata=True):
+def load_reaction(reaction, cb=False, load_metadata=True):
     stoichiometry = OrderedDict()
     modifiers = OrderedDict()
     substrates = []
@@ -284,14 +284,12 @@ def load_reaction(reaction, sbml_model, cb=False, exchange_detection=None, load_
             kind = RegulatorType.UNKNOWN
         modifiers[m_id] = kind
 
-    reaction_type = reaction_type_detection(reaction, substrates, products, sbml_model, exchange_detection)
-
     if cb:
         rxn = CBReaction(reaction.getId(), name=reaction.getName(), reversible=reaction.getReversible(),
-                         stoichiometry=stoichiometry, regulators=modifiers, reaction_type=reaction_type)
+                         stoichiometry=stoichiometry, regulators=modifiers)
     else:
         rxn = Reaction(reaction.getId(), name=reaction.getName(), reversible=reaction.getReversible(),
-                       stoichiometry=stoichiometry, regulators=modifiers, reaction_type=reaction_type)
+                       stoichiometry=stoichiometry, regulators=modifiers)
 
     if load_metadata:
         extract_metadata(reaction, rxn)
@@ -299,26 +297,41 @@ def load_reaction(reaction, sbml_model, cb=False, exchange_detection=None, load_
     return rxn
 
 
-def reaction_type_detection(reaction, substrates, products, sbml_model, exchange_detection):
-    # TODO detect all other reaction types
+def reaction_type_detection(r_id, model, sbml_model, exchange_detection):
 
+    reaction = model.reactions[r_id]
+    substrates = reaction.get_substrates()
+    products = reaction.get_products()
+
+    # test exchange reaction
     if exchange_detection == ExchangeDetection.UNBALANCED.value:
-        left = len(substrates)
-        right = len(products)
-        is_exchange = left * right == 0
+        if len(substrates) * len(products) == 0:
+            return ReactionType.EXCHANGE
 
     elif exchange_detection == ExchangeDetection.BOUNDARY.value:
-        left_boundary = all(sbml_model.getSpecies(m_id).getBoundaryCondition() for m_id in substrates)
-        right_boundary = all(sbml_model.getSpecies(m_id).getBoundaryCondition() for m_id in products)
-        is_exchange = left_boundary or right_boundary
+        if all(sbml_model.getSpecies(m_id).getBoundaryCondition() for m_id in substrates):
+            return ReactionType.EXCHANGE
+
+        if all(sbml_model.getSpecies(m_id).getBoundaryCondition() for m_id in products):
+            return ReactionType.EXCHANGE
+
     elif isinstance(exchange_detection, re_type):
-        is_exchange = exchange_detection.search(reaction.getId()) is not None
-    else:
-        is_exchange = False
+        if exchange_detection.search(r_id) is not None:
+            return ReactionType.EXCHANGE
 
-    reaction_type = ReactionType.EXCHANGE if is_exchange else ReactionType.OTHER
+    # test sink reactions (unbalanced and internal)
+    if len(substrates) * len(products) == 0:
+        return ReactionType.SINK
 
-    return reaction_type
+    # test transport reactions (multiple compartments)
+    if len(model.get_reaction_compartments(r_id)) > 1:
+        return ReactionType.TRANSPORT
+
+    # test enzymatic reactions (GPR associated)
+    if len(reaction.get_genes()) > 0:
+        return ReactionType.ENZYMATIC
+
+    return ReactionType.OTHER
 
 
 def load_cobra_bounds(sbml_model, model):

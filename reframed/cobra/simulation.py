@@ -7,7 +7,7 @@ from math import inf
 
 
 def FBA(model, objective=None, minimize=False, constraints=None, solver=None, get_values=True,
-        get_shadow_prices=False, get_reduced_costs=False):
+        shadow_prices=False, reduced_costs=False):
     """ Run a Flux Balance Analysis (FBA) simulation:
 
     Arguments:
@@ -17,8 +17,8 @@ def FBA(model, objective=None, minimize=False, constraints=None, solver=None, ge
         constraints (dict): environmental or additional constraints (optional)
         solver (Solver): solver instance instantiated with the model, for speed (optional)
         get_values (bool): set to false for speedup if you only care about the objective value (optional, default: True)
-        get_shadow_prices (bool): retrieve shadow prices (default: False)
-        get_reduced_costs (bool): retrieve reduced costs (default: False)
+        shadow_prices (bool): retrieve shadow prices (default: False)
+        reduced_costs (bool): retrieve reduced costs (default: False)
 
     Returns:
         Solution: solution
@@ -34,7 +34,7 @@ def FBA(model, objective=None, minimize=False, constraints=None, solver=None, ge
         solver = solver_instance(model)
 
     solution = solver.solve(objective, minimize=minimize, constraints=constraints, get_values=get_values,
-                            get_shadow_prices=get_shadow_prices, get_reduced_costs=get_reduced_costs)
+                            shadow_prices=shadow_prices, reduced_costs=reduced_costs)
     return solution
 
 

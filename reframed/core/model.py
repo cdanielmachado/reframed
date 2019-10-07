@@ -54,11 +54,11 @@ class Metabolite(object):
 
 class ReactionType(Enum):
     """ Enumeration of possible reaction types. """
-    ENZYMATIC = 0
-    TRANSPORT = 1
-    EXCHANGE = 2
-    SINK = 3
-    OTHER = 4
+    ENZYMATIC = 'enzymatic'
+    TRANSPORT = 'transport'
+    EXCHANGE = 'exchange'
+    SINK = 'sink'
+    OTHER = 'other'
 
 
 class RegulatorType(Enum):
@@ -566,6 +566,15 @@ class Model(object):
         """
 
         return '\n'.join(self.print_reaction(r_id, use_names) for r_id in self.reactions)
+
+    def summary(self):
+        print("Metabolites:")
+        for c_id in self.compartments:
+            print(c_id, len(self.get_compartment_metabolites(c_id)))
+
+        print("\nReactions:")
+        for rxn_type in ReactionType:
+            print(rxn_type.value, len(self.get_reactions_by_type(rxn_type)))
 
     def __str__(self):
         return self.to_string()

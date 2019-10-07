@@ -1,5 +1,5 @@
 from collections import Iterable
-from .solver import Solver, VarType, Parameter
+from .solver import Solver, VarType, Parameter, default_parameters
 from .solution import Solution, Status
 from gurobipy import Model as GurobiModel, GRB, quicksum
 from math import inf
@@ -46,6 +46,7 @@ class GurobiSolver(Solver):
     def __init__(self, model=None):
         Solver.__init__(self)
         self.problem = GurobiModel()
+        self.set_parameters(default_parameters)
         self.set_logging()
         if model:
             self.build_problem(model)
@@ -193,7 +194,7 @@ class GurobiSolver(Solver):
         self.problem.setObjective(obj_expr, sense)
 
     def solve(self, linear=None, quadratic=None, minimize=None, model=None, constraints=None, get_values=True,
-              get_shadow_prices=False, get_reduced_costs=False, pool_size=0, pool_gap=None):
+              shadow_prices=False, reduced_costs=False, pool_size=0, pool_gap=None):
         """ Solve the optimization problem.
 
         Arguments:
@@ -203,8 +204,8 @@ class GurobiSolver(Solver):
             model (CBModel): model (optional, leave blank to reuse previous model structure)
             constraints (dict): additional constraints (optional)
             get_values (bool or list): set to false for speedup if you only care about the objective (default: True)
-            get_shadow_prices (bool): return shadow prices if available (default: False)
-            get_reduced_costs (bool): return reduced costs if available (default: False)
+            shadow_prices (bool): return shadow prices if available (default: False)
+            reduced_costs (bool): return reduced costs if available (default: False)
             pool_size (int): calculate solution pool of given size (only for MILP problems)
             pool_gap (float): maximum relative gap for solutions in pool (optional)
 
@@ -242,7 +243,7 @@ class GurobiSolver(Solver):
 
             if status == Status.OPTIMAL:
                 fobj = problem.ObjVal
-                values, shadow_prices, reduced_costs = None, None, None
+                values, s_prices, r_costs = None, None, None
 
                 if get_values:
                     if isinstance(get_values, Iterable):
@@ -251,13 +252,13 @@ class GurobiSolver(Solver):
                     else:
                         values = {r_id: problem.getVarByName(r_id).X for r_id in self.var_ids}
 
-                if get_shadow_prices:
-                    shadow_prices = {m_id: problem.getConstrByName(m_id).Pi for m_id in self.constr_ids}
+                if shadow_prices:
+                    s_prices = {m_id: problem.getConstrByName(m_id).Pi for m_id in self.constr_ids}
 
-                if get_reduced_costs:
-                    reduced_costs = {r_id: problem.getVarByName(r_id).RC for r_id in self.var_ids}
+                if reduced_costs:
+                    r_costs = {r_id: problem.getVarByName(r_id).RC for r_id in self.var_ids}
 
-                solution = Solution(status, message, fobj, values, shadow_prices, reduced_costs)
+                solution = Solution(status, message, fobj, values, s_prices, r_costs)
             else:
                 solution = Solution(status, message)
 
