@@ -96,36 +96,3 @@ def blocked_reactions(model, constraints=None, reactions=None, abstol=1e-9):
 
     return [r_id for r_id, (lb, ub) in variability.items() if (abs(lb) + abs(ub)) < abstol]
 
-
-def flux_envelope(model, r_x, r_y, steps=10, constraints=None):
-    """ Calculate the flux envelope for a pair of reactions.
-
-    Arguments:
-        model (CBModel): the model
-        r_x (str): reaction on x-axis
-        r_y (str): reaction on y-axis
-        steps (int): number of steps to compute (default: 10)
-        constraints (dict): custom constraints to the FBA problem
-
-    Returns:
-        tuple: x values, y_min values, y_max values
-    """
-
-    x_range = FVA(model, reactions=[r_x], constraints=constraints)
-    xmin, xmax = x_range[r_x]
-    xvals = linspace(xmin, xmax, steps).tolist()
-    ymins, ymaxs = [None] * steps, [None] * steps
-
-    if constraints is None:
-        _constraints = {}
-    else:
-        _constraints = {}
-        _constraints.update(constraints)
-
-    for i, xval in enumerate(xvals):
-        _constraints[r_x] = xval
-        y_range = FVA(model, reactions=[r_y], constraints=_constraints)
-        ymins[i], ymaxs[i] = y_range[r_y]
-
-    return xvals, ymins, ymaxs
-

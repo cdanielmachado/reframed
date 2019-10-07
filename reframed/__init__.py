@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-"""Top-level package for reframed."""
+"""Top-level package for ReFramed."""
 
-__author__ = """Daniel Machado"""
+__author__ = "Daniel Machado"
 __email__ = 'cdanielmachado@gmail.com'
 __version__ = '0.1.0'
 
@@ -18,8 +18,9 @@ from .solvers.gurobi_solver import GurobiSolver
 
 from .io.sbml import load_cbmodel, save_cbmodel
 
-from .cobra.variability import FVA, blocked_reactions, flux_envelope
-from .cobra.simulation import FBA, pFBA, MOMA, lMOMA, ROOM
+from .cobra.variability import FVA, blocked_reactions
+from .cobra.plotting import plot_flux_envelope
+from .cobra.simulation import FBA, pFBA, CAFBA, MOMA, lMOMA, ROOM
 from .cobra.thermodynamics import TFA, TVA, looplessFBA, NET
 from .cobra.medium import minimal_medium
 
