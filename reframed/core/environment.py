@@ -11,7 +11,7 @@ class Environment(AttrOrderedDict):
         AttrOrderedDict.__init__(self)
 
     def __str__(self):
-        entries = ('\t'.join([r_id, lb, ub]) for r_id, (lb, ub) in self.bounds.items())
+        entries = (f"{r_id}\t{lb}\t{ub}" for r_id, (lb, ub) in self.items())
         return '\n'.join(entries)
 
     def __repr__(self):
