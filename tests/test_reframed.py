@@ -4,8 +4,8 @@
 import unittest
 from reframed import *
 
-# TEST_MODEL = 'data/e_coli_core.xml.gz'
-TEST_MODEL = 'data/iML1515.xml.gz'
+TEST_MODEL = 'data/e_coli_core.xml.gz'
+# TEST_MODEL = 'data/iML1515.xml.gz'
 TEST_MODEL_COBRA = 'data/model_cobra.xml.gz'
 TEST_MODEL_FBC2 = 'data/model_fbc2.xml.gz'
 
@@ -30,6 +30,7 @@ class TestSBML(unittest.TestCase):
     def test_load_cbmodel_cobra(self):
         load_cbmodel(TEST_MODEL_COBRA, flavor='cobra')
 
+
 class TestSimulation(unittest.TestCase):
     """Test SBML import / export."""
 
@@ -43,6 +44,10 @@ class TestSimulation(unittest.TestCase):
 
     def test_pFBA(self):
         sol = pFBA(self.model, constraints={REACTION_KO: 0})
+        self.assertGreater(sol.values[self.obj_id], MIN_GROWTH)
+
+    def test_CAFBA(self):
+        sol = CAFBA(self.model, constraints={REACTION_KO: 0})
         self.assertGreater(sol.values[self.obj_id], MIN_GROWTH)
 
     def test_MOMA(self):
