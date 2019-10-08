@@ -184,3 +184,16 @@ class Solution(object):
             turnover = self.get_metabolites_turnover(model)
             print_values(turnover, pattern=pattern, sort=sort, abstol=abstol)
 
+    def to_dataframe(self):
+        """ Convert reaction fluxes to *pandas.DataFrame*
+
+        Returns:
+            pandas.DataFrame: flux values
+        """
+        try:
+            import pandas as pd
+        except ImportError:
+            raise RuntimeError("Pandas is not installed.")
+
+        return pd.DataFrame(self.values.values(), columns=["value"], index=self.values.keys())
+
