@@ -25,6 +25,7 @@ from .cobra.simulation import FBA, pFBA, CAFBA, MOMA, lMOMA, ROOM
 from .cobra.thermodynamics import TFA, TVA, looplessFBA, NET
 from .cobra.medium import minimal_medium
 from .cobra.knockout import gene_knockout, reaction_knockout, essential_genes, essential_reactions
+from .cobra.transcriptomics import GIMME, eFlux
 
 from .community.model import Community
 from .community.simulation import SteadyCom, SteadierCom, SteadyComVA, SteadierComVA

@@ -48,9 +48,6 @@ def minimal_medium(model, exchange_reactions=None, direction=-1, min_mass_weight
 
     if not solver:
         solver = solver_instance(model)
-        persistent = True
-    else:
-        persistent = False
 
     if not milp and max_compounds is not None:
         raise RuntimeError("max_compounds can only be used with MILP formulation")
