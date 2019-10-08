@@ -28,3 +28,7 @@ from .cobra.knockout import gene_knockout, reaction_knockout, essential_genes, e
 from .community.model import Community
 from .community.simulation import SteadyCom, SteadierCom, SteadyComVA, SteadierComVA
 
+from .external.escher import escher_maps, fluxes2escher
+from .external.cobrapy import to_cobrapy, from_cobrapy
+
+
