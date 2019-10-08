@@ -19,7 +19,7 @@ def nullspace(M, eps=1e-12):
     return N
 
 
-def looplessFBA(model, objective=None, minimize=False, constraints=None, internal=None, solver=None, get_values=True):
+def llFBA(model, objective=None, minimize=False, constraints=None, internal=None, solver=None, get_values=True):
     """ Run a loopless FBA simulation (as defined in Schellenberger et al, 2011):
 
     Arguments:

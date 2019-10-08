@@ -1,10 +1,9 @@
 from ..solvers import solver_instance
 from ..solvers.solution import Status
 from .simulation import FBA
-from .thermodynamics import looplessFBA
+from .thermodynamics import llFBA
 from warnings import warn
 from math import inf
-from numpy import linspace
 
 
 def FVA(model, obj_frac=0, reactions=None, constraints=None, loopless=False, internal=None, solver=None):
@@ -42,8 +41,8 @@ def FVA(model, obj_frac=0, reactions=None, constraints=None, loopless=False, int
 
     for r_id in reactions:
         if loopless:
-            solution = looplessFBA(model, r_id, True, constraints=_constraints, internal=internal,
-                                   solver=solver, get_values=False)
+            solution = llFBA(model, r_id, True, constraints=_constraints, internal=internal,
+                             solver=solver, get_values=False)
         else:
             solution = FBA(model, r_id, True, constraints=_constraints, solver=solver, get_values=False)
 
@@ -60,8 +59,8 @@ def FVA(model, obj_frac=0, reactions=None, constraints=None, loopless=False, int
 
     for r_id in reactions:
         if loopless:
-            solution = looplessFBA(model, r_id, False, constraints=_constraints, internal=internal,
-                                   solver=solver, get_values=False)
+            solution = llFBA(model, r_id, False, constraints=_constraints, internal=internal,
+                             solver=solver, get_values=False)
         else:
             solution = FBA(model, r_id, False, constraints=_constraints, solver=solver, get_values=False)
 

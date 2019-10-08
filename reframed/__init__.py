@@ -22,7 +22,7 @@ from .io.sbml import load_cbmodel, save_cbmodel
 from .cobra.variability import FVA, blocked_reactions
 from .cobra.plotting import plot_flux_envelope
 from .cobra.simulation import FBA, pFBA, CAFBA, MOMA, lMOMA, ROOM
-from .cobra.thermodynamics import TFA, TVA, looplessFBA, NET
+from .cobra.thermodynamics import TFA, TVA, llFBA, NET
 from .cobra.medium import minimal_medium
 from .cobra.knockout import gene_knockout, reaction_knockout, essential_genes, essential_reactions
 from .cobra.transcriptomics import GIMME, eFlux
