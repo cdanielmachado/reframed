@@ -194,8 +194,6 @@ def CAFBA(model, objective=None, minimize=False, wc=0, we=8.3e-4, wr=0.169, pmax
 
     solution = solver.solve(objective, minimize=minimize, constraints=constraints)
 
-    solver.write_to_file("/Users/cmachado/Desktop/cafba.lp")
-
     solver.remove_constraint('alloc')
 
     if cleanup:
