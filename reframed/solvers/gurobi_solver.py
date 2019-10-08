@@ -46,8 +46,8 @@ class GurobiSolver(Solver):
     def __init__(self, model=None):
         Solver.__init__(self)
         self.problem = GurobiModel()
+        self.set_logging(False)
         self.set_parameters(default_parameters)
-        self.set_logging()
         if model:
             self.build_problem(model)
 
@@ -279,7 +279,7 @@ class GurobiSolver(Solver):
             else:
                 solution = []
 
-        # reset old constraints because temporary constraints should not be persistent
+        # restore values of temporary constraints
         if constraints:
             for r_id, (lb, ub) in old_constraints.items():
                 lpvar = problem.getVarByName(r_id)
@@ -316,22 +316,6 @@ class GurobiSolver(Solver):
             solutions.append(sol)
 
         return solutions
-
-    def set_lower_bounds(self, bounds_dict):
-        for var_id, lb in bounds_dict.items():
-            lpvar = self.problem.getVarByName(var_id)
-            lpvar.lb = lb if lb is not None else GRB.INFINITY
-
-    def set_upper_bounds(self, bounds_dict):
-        for var_id, ub in bounds_dict.items():
-            lpvar = self.problem.getVarByName(var_id)
-            lpvar.ub = ub if ub is not None else GRB.INFINITY
-
-    def set_bounds(self, bounds_dict):
-        for var_id, bounds in bounds_dict.items():
-            lpvar = self.problem.getVarByName(var_id)
-            lpvar.lb = bounds[0] if bounds[0] is not None else GRB.INFINITY
-            lpvar.ub = bounds[1] if bounds[1] is not None else GRB.INFINITY
 
     def set_parameter(self, parameter, value):
         """ Set a parameter value for this optimization problem

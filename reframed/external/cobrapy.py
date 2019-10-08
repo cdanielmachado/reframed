@@ -19,6 +19,7 @@ def to_cobrapy(model):
         raise RuntimeError("CobraPy is not installed.")
 
     cb_model = cb.Model(model.id)
+    cb_model.compartments = {comp.id: comp.name for comp in model.compartments.values()}
 
     cb_mets = []
     for met in model.metabolites.values():

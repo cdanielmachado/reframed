@@ -51,12 +51,11 @@ class CplexSolver(Solver):
             Parameter.MIP_REL_GAP: self.problem.parameters.mip.tolerances.absmipgap,
             Parameter.POOL_SIZE: self.problem.parameters.mip.limits.populate,
             Parameter.POOL_GAP: self.problem.parameters.mip.pool.relgap
-
         }
 
         self.set_parameters(default_parameters)
 
-        self.set_logging()
+        self.set_logging(False)
         self._cached_lin_obj = {}
         self._cached_sense = None
         self._cached_lower_bounds = {}
@@ -442,26 +441,6 @@ class CplexSolver(Solver):
         if updated_ub:
             ub_old = [(r_id, self._cached_upper_bounds[r_id]) for r_id, _ in updated_ub]
             self.problem.variables.set_upper_bounds(ub_old)
-
-    def set_lower_bounds(self, bounds_dict):
-        lower_bounds = [(var_id, infinity_fix(val)) for var_id, val in bounds_dict.items()]
-        self.problem.variables.set_lower_bounds(lower_bounds)
-
-    def set_upper_bounds(self, bounds_dict):
-        upper_bounds = [(var_id, infinity_fix(val)) for var_id, val in bounds_dict.items()]
-        self.problem.variables.set_lower_bounds(upper_bounds)
-
-    def set_bounds(self, bounds_dict):
-        lower_bounds = [(var_id, infinity_fix(lb)) for var_id, (lb, _) in bounds_dict.items()]
-        upper_bounds = [(var_id, infinity_fix(ub)) for var_id, (_, ub) in bounds_dict.items()]
-        self.problem.variables.set_lower_bounds(lower_bounds)
-        self.problem.variables.set_upper_bounds(upper_bounds)
-
-    def update_coefficient(self, coeff, var_id, value):
-        self.problem.linear_constraints.set_coefficients([(coeff, var_id, value)])
-
-    def update_coefficients(self, coefficients):
-        self.problem.linear_constraints.set_coefficients(coefficients)
 
     def set_parameter(self, parameter, value):
         """ Set a parameter value for this optimization problem

@@ -2,3 +2,5 @@
 .idea/*
 reframed.egg-info/*
 *.pyc
+tests/data/model_cobra.xml.gz
+tests/data/model_fbc2.xml.gz

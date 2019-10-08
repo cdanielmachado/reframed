@@ -1,3 +1,5 @@
+from .solver import Parameter
+
 solvers = dict()
 
 try:
@@ -13,7 +15,12 @@ try:
 except ImportError:
     pass
 
-from .solver import Parameter
+try:
+    from .optlang_solver import OptLangSolver
+    solvers['optlang'] = OptLangSolver
+except ImportError:
+    pass
+
 
 default_solver = None
 
@@ -25,7 +32,7 @@ def get_default_solver():
     if default_solver:
         return default_solver
 
-    solver_order = ['cplex', 'gurobi']
+    solver_order = ['cplex', 'gurobi', 'optlang']
 
     for solver in solver_order:
         if solver in list(solvers.keys()):

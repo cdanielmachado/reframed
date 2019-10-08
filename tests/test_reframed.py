@@ -5,12 +5,14 @@ import unittest
 from reframed import *
 
 TEST_MODEL = 'data/e_coli_core.xml.gz'
-# TEST_MODEL = 'data/iML1515.xml.gz'
+#TEST_MODEL = 'data/iML1515.xml.gz'
 TEST_MODEL_COBRA = 'data/model_cobra.xml.gz'
 TEST_MODEL_FBC2 = 'data/model_fbc2.xml.gz'
 
 MIN_GROWTH = 0.1
 REACTION_KO = 'R_PGI'
+
+#set_default_solver("optlang")
 
 
 class TestSBML(unittest.TestCase):

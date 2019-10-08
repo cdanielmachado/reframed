@@ -4,9 +4,9 @@ from math import inf
 
 class VarType(Enum):
     """ Enumeration of possible variable types. """
-    BINARY = 1
-    INTEGER = 2
-    CONTINUOUS = 3
+    BINARY = 'binary'
+    INTEGER = 'integer'
+    CONTINUOUS = 'continuous'
 
 
 class Parameter(Enum):
@@ -219,37 +219,5 @@ class Solver(object):
 
         raise Exception('Not implemented for this solver.')
 
-    def set_lower_bounds(self, bounds_dict):
-        """ Set lower bounds from dictionary
-
-        Arguments:
-            bounds_dict (dict): lower bounds
-        """
-
-        raise Exception('Not implemented for this solver.')
-
-    def set_upper_bounds(self, bounds_dict):
-        """ Set upper bounds from dictionary
-
-        Arguments:
-            bounds_dict (dict): upper bounds
-        """
-
-        raise Exception('Not implemented for this solver.')
-
-    def set_bounds(self, bounds_dict):
-        """ Set lower and upper bounds from tuple dictionary
-
-        Arguments:
-            bounds_dict (dict): lower and upper bounds
-        """
-
-        raise Exception('Not implemented for this solver.')
-
-    def update_coefficient(self, coeff, var_id, value):
-        raise Exception('Not implemented for this solver.')
-
-    def update_coefficients(self, coefficients):
-        raise Exception('Not implemented for this solver.')
 
 
