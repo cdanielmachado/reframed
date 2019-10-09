@@ -295,8 +295,9 @@ def NET(model, deltaG0, sdeltaG0=None, concentrations=None, concentration_max=1e
         get_dG_range (bool): calculate dG ranges (default: True)
         get_concentration_range (bool): calculate metabolite concentration ranges (default: False)
         verbose (bool): Print progress information if true
-    Returns:
 
+    Returns:
+        dict (dG range)
     """
 
     solver = solver_instance(model)

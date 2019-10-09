@@ -13,6 +13,7 @@ Name | Long name | Reference
 FBA | Flux Balance Analysis | (Varma and Palsson, 1993)
 FVA | Flux Variability Analysis | (Mahadevan and Schilling, 2003)
 pFBA | Parsimonious FBA | (Lewis et al, 2010)
+FBrAtio | FBA with flux ratios| (Yen et al, 2013)
 CAFBA | Constrained Allocation FBA | (Mori et al, 2016)
 MOMA | Minimization of Metabolic Adjustment | (Segre et al, 2002)
 lMOMA | linear MOMA | (Segre et al, 2002)

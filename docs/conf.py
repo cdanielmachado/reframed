@@ -47,7 +47,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'reframed'
+project = u'ReFramed'
 copyright = u"2019, Daniel Machado"
 author = u"Daniel Machado"
 

@@ -8,44 +8,24 @@ Installation
 Stable release
 --------------
 
-To install reframed, run this command in your terminal:
+To install ReFramed, run this command in your terminal:
 
 .. code-block:: console
 
     $ pip install reframed
 
-This is the preferred method to install reframed, as it will always install the most recent stable release.
+Please note that ReFramed is a pure Python 3 library (>= 3.6).
 
-If you don't have `pip`_ installed, this `Python installation guide`_ can guide
-you through the process.
+Solvers
+-------
 
-.. _pip: https://pip.pypa.io
-.. _Python installation guide: http://docs.python-guide.org/en/latest/starting/installation/
+ReFramed directly supports CPLEX_ and Gurobi_.
+Additionally, it provides an interface to OptLang_, allowing to use any solver implemented in its latest release.
 
+.. _CPLEX: https://www.ibm.com/analytics/cplex-optimizer
+.. _Gurobi: https://www.gurobi.com
+.. _OptLang: https://optlang.readthedocs.io
 
-From sources
-------------
+Please note that you will need an academic license to use these solvers.
+Please read the respective manuals for detailed installation instructions.
 
-The sources for reframed can be downloaded from the `Github repo`_.
-
-You can either clone the public repository:
-
-.. code-block:: console
-
-    $ git clone git://github.com/cdanielmachado/reframed
-
-Or download the `tarball`_:
-
-.. code-block:: console
-
-    $ curl -OJL https://github.com/cdanielmachado/reframed/tarball/master
-
-Once you have a copy of the source, you can install it with:
-
-.. code-block:: console
-
-    $ python setup.py install
-
-
-.. _Github repo: https://github.com/cdanielmachado/reframed
-.. _tarball: https://github.com/cdanielmachado/reframed/tarball/master

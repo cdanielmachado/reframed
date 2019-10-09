@@ -21,7 +21,7 @@ def fluxes2escher(fluxes, map_name=None, fmt_func=None, **kwargs):
         fluxes (dict): flux distribution
         map_name (str): name of **escher** map (for a list of available maps run *escher_maps*)
         fmt_func (str or function): python format string (see Notes)
-        **kwargs: additional arguments passed to *escher.Builder* (see Escher's documentation for details).
+        kwargs: additional arguments passed to *escher.Builder* (see Escher's documentation for details).
 
     Notes:
         The format function parameter is used to convert reaction ids to BiGG ids.
@@ -45,5 +45,5 @@ def fluxes2escher(fluxes, map_name=None, fmt_func=None, **kwargs):
 
     fluxes = {fmt_func(r_id): val for r_id, val in fluxes.items()}
 
-    return escher.Builder(map_name=map_name, reaction_data=fluxes)
+    return escher.Builder(map_name=map_name, reaction_data=fluxes, **kwargs)
 
