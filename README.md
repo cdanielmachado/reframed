@@ -2,6 +2,7 @@
 [![PyPI version](https://badge.fury.io/py/reframed.svg)](https://badge.fury.io/py/reframed)
 [![Build Status](https://travis-ci.org/cdanielmachado/reframed.svg?branch=master)](https://travis-ci.org/cdanielmachado/reframed)
 [![Documentation Status](https://readthedocs.org/projects/reframed/badge/?version=latest)](https://reframed.readthedocs.io/en/latest/?badge=latest)
+[![DOI](https://zenodo.org/badge/212059108.svg)](https://zenodo.org/badge/latestdoi/212059108)
 
 ![ReFramed](reframed_logo.png)
 
