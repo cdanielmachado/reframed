@@ -48,7 +48,7 @@ def pFBA(model, objective=None, obj_frac=None, minimize=False, constraints=None,
         objective (dict): objective coefficients (optional)
         obj_frac (float): require only a fraction of the main objective during the flux minimization step (optional)
         minimize (bool): sense of optimization (maximize by default)
-        constraints (dict: environmental or additional constraints (optional)
+        constraints (dict): environmental or additional constraints (optional)
         reactions (list): list of reactions to be minimized (optional, default: all)
         solver (Solver): solver instance instantiated with the model, for speed (optional)
         cleanup (bool): remove temporary variables from solution (default: True)
@@ -114,6 +114,43 @@ def pFBA(model, objective=None, obj_frac=None, minimize=False, constraints=None,
     return solution
 
 
+def FBrAtio(model, ratios, objective=None, minimize=False, constraints=None, parsimonious=False, solver=None):
+    """ Run an FBA with ratio constraints (FBrAtio) simulation:
+
+    Arguments:
+        model (CBModel): a constraint-based model
+        ratios (list): list of flux ratios (see Notes)
+        objective (dict): objective coefficients (optional)
+        minimize (bool): sense of optimization (maximize by default)
+        constraints (dict): environmental or additional constraints (optional)
+        parsimonious (bool): run parsimonious FBA (default: False)
+        solver (Solver): solver instance instantiated with the model, for speed (optional)
+
+    Notes:
+        Multiple ratios can be given in the list, each element is a tuple with numerator, denometor and ratio value.
+        For instance, the ratio: R_PGI / R_G6PDH2r = 1.5 would be formulated as ('R_PGI', 'R_G6PDH2r', 1.5)
+
+
+    Returns:
+        Solution: solution
+    """
+
+    for (r_num, r_den, val) in ratios:
+        model.add_ratio_constraint(r_num, r_den, val)
+
+    if parsimonious:
+        sol = pFBA(model, objective=objective, minimize=minimize, constraints=constraints, solver=solver)
+    else:
+        sol = FBA(model, objective=objective, minimize=minimize, constraints=constraints, solver=solver)
+
+    for (r_num, r_den, _) in ratios:
+        model.remove_ratio_constraint(r_num, r_den)
+
+    model.remove_compartment('pseudo')
+
+    return sol
+
+
 def CAFBA(model, objective=None, minimize=False, wc=0, we=8.3e-4, wr=0.169, pmax=0.484, carbon_source="M_glc__D_e",
           constraints=None, solver=None, cleanup=True):
     """ Constrained Allocation Flux Balance Analysis (Mori et al, 2016).
@@ -126,7 +163,7 @@ def CAFBA(model, objective=None, minimize=False, wc=0, we=8.3e-4, wr=0.169, pmax
         we (float): weight of biosynthetic enzymes sector (default: 8.3e-4)
         wr (float): weight of ribosome-affiliated proteins (default: 0.169)
         pmax (float): maximum protein allocation excluding Q-sector (default: 0.484)
-        constraints (dict: environmental or additional constraints (optional)
+        constraints (dict): environmental or additional constraints (optional)
         solver (Solver): solver instance instantiated with the model, for speed (optional)
         cleanup (bool): remove temporary variables from solution (default: True)
 

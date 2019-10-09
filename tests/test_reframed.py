@@ -48,6 +48,12 @@ class TestSimulation(unittest.TestCase):
         sol = pFBA(self.model, constraints={REACTION_KO: 0})
         self.assertGreater(sol.values[self.obj_id], MIN_GROWTH)
 
+    def test_FBrAtio(self):
+        sol = FBrAtio(self.model, [("R_PGI", "R_G6PDH2r", 2)])
+        ratio = sol.values["R_PGI"] / sol.values["R_G6PDH2r"]
+        self.assertAlmostEqual(ratio, 2, 3)
+        self.assertGreater(sol.values[self.obj_id], MIN_GROWTH)
+
     def test_CAFBA(self):
         sol = CAFBA(self.model, constraints={REACTION_KO: 0})
         self.assertGreater(sol.values[self.obj_id], MIN_GROWTH)
