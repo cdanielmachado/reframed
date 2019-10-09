@@ -5,3 +5,5 @@ reframed.egg-info/*
 tests/data/model_cobra.xml.gz
 tests/data/model_fbc2.xml.gz
 docs/_build/*
+build/*
+dist/*

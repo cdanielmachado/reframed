@@ -1,3 +1,4 @@
+reframed
 numpy
 scipy
 sympy
