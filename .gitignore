@@ -7,3 +7,5 @@ tests/data/model_fbc2.xml.gz
 docs/_build/*
 build/*
 dist/*
+.eggs/*
+.tox/*

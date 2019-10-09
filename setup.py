@@ -12,7 +12,7 @@ requirements = ['numpy', 'scipy', 'sympy', 'python-libsbml']
 
 setup_requirements = [ ]
 
-test_requirements = [ ]
+test_requirements = requirements + ['cplex']
 
 setup(
     author="Daniel Machado",

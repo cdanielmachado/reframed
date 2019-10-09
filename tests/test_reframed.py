@@ -4,10 +4,13 @@
 import unittest
 from reframed import *
 
-TEST_MODEL = 'data/e_coli_core.xml.gz'
-#TEST_MODEL = 'data/iML1515.xml.gz'
-TEST_MODEL_COBRA = 'data/model_cobra.xml.gz'
-TEST_MODEL_FBC2 = 'data/model_fbc2.xml.gz'
+#model_path = 'data/'
+model_path = 'tests/data/'
+
+TEST_MODEL = model_path + 'e_coli_core.xml.gz'
+#TEST_MODEL = model_path + 'iML1515.xml.gz'
+TEST_MODEL_COBRA = model_path + 'model_cobra.xml.gz'
+TEST_MODEL_FBC2 = model_path + 'model_fbc2.xml.gz'
 
 MIN_GROWTH = 0.1
 REACTION_KO = 'R_PGI'
