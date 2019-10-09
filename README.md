@@ -32,6 +32,10 @@ GIMME | Gene Inactivity Moderated by Met and Exp | (Becker and Palsson, 2008)
 E-Flux | E-Flux | (Colijn et al, 2009)
 SteadyCom | Community simulation | (Chan et al, 2017)
 
+### Documentation
+
+Please check documentation with installation and usage instructions [here](https://reframed.readthedocs.io).
+
 ### Credits and License
 
 Developed by Daniel Machado at the European Molecular Biology Laboratory (2019).
