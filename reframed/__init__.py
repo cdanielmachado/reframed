@@ -13,9 +13,6 @@ from .core.environment import Environment
 from .core.transformation import make_irreversible, simplify
 
 from .solvers import set_default_solver, solver_instance
-from .solvers.cplex_solver import CplexSolver
-from .solvers.gurobi_solver import GurobiSolver
-from .solvers.optlang_solver import OptLangSolver
 
 from .io.sbml import load_cbmodel, save_cbmodel
 
