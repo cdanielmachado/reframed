@@ -1,3 +1,7 @@
+[![Documentation Status](https://readthedocs.org/projects/reframed/badge/?version=latest)](https://reframed.readthedocs.io/en/latest/?badge=latest)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![PyPI version](https://badge.fury.io/py/reframed.svg)](https://badge.fury.io/py/reframed)
+
 ![ReFramed](reframed_logo.png)
 
 # ReFramed: metabolic modeling package

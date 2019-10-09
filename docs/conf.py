@@ -20,9 +20,17 @@
 #
 import os
 import sys
+import reframed
+import mock
+
 sys.path.insert(0, os.path.abspath('..'))
 
-import reframed
+MOCK_MODULES = ['cplex', 'gurobipy', 'escher', 'cobra', 'optlang']
+
+for mod_name in MOCK_MODULES:
+    sys.modules[mod_name] = mock.Mock()
+
+
 
 # -- General configuration ---------------------------------------------
 
