@@ -4,7 +4,7 @@ from ..solvers.solution import Status
 from ..core.model import ReactionType
 from ..solvers import solver_instance
 from warnings import warn
-from math import inf
+from math import inf, isinf
 
 
 def build_problem(community, growth=1, w_e=0.001, w_r=0.5, spontaneous='spontaneous', min_uptake=False, bigM=1000):
@@ -91,8 +91,8 @@ def build_problem(community, growth=1, w_e=0.001, w_r=0.5, spontaneous='spontane
                 solver.add_constraint(f"g_{org_id}", {f"x_{org_id}": growth, new_id: -1}, update=False)
             # lb * X < R < ub * X
             else:
-                lb = -bigM if reaction.lb is None else reaction.lb
-                ub = bigM if reaction.ub is None else reaction.ub
+                lb = -bigM if isinf(reaction.lb) else reaction.lb
+                ub = bigM if isinf(reaction.ub) else reaction.ub
 
                 if lb != 0:
                     solver.add_constraint(f"lb_{new_id}", {f"x_{org_id}": lb, new_id: -1}, '<', 0, update=False)
@@ -120,10 +120,11 @@ def build_problem(community, growth=1, w_e=0.001, w_r=0.5, spontaneous='spontane
 
     solver.update()
 
-    # closure for updating growth
     def update_growth(value):
+        # TODO: find a solution that is not CPLEX specific
         coefficients = [(f"g_{x}", f"x_{x}", value) for x in community.organisms]
-        solver.update_coefficients(coefficients)
+        solver.problem.linear_constraints.set_coefficients(coefficients)
+
     solver.update_growth = update_growth
 
     if min_uptake:

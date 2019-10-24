@@ -62,6 +62,8 @@ def pFBA(model, objective=None, obj_frac=None, minimize=False, constraints=None,
 
     if not objective:
         objective = model.get_objective()
+    elif isinstance(objective, str):
+        objective = {objective: 1}
 
     pre_solution = FBA(model, objective, minimize, constraints, solver)
 

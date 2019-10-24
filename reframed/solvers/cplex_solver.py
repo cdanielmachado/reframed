@@ -143,6 +143,7 @@ class CplexSolver(Solver):
                                             senses=senses,
                                             rhs=rhs,
                                             names=constr_ids)
+
         self.constr_ids.extend(constr_ids)
 
     def remove_variable(self, var_id):
