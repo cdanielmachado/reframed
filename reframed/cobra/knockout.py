@@ -24,6 +24,9 @@ def gene_knockout(model, genes, method='FBA', reference=None, constraints=None, 
         Solution: solution
     """
 
+    if isinstance(genes, str):
+        genes = [genes]
+
     inactive_reactions = deleted_genes_to_reactions(model, genes)
 
     if inactive_reactions or not ignore_silent:
@@ -44,11 +47,41 @@ def deleted_genes_to_reactions(model, genes):
     Returns:
         list: list of deleted reactions
     """
+
+    if isinstance(genes, str):
+        genes = [genes]
+
     active_genes = set(model.genes) - set(genes)
     active_reactions = model.evaluate_gprs(active_genes)
     inactive_reactions = set(model.reactions) - set(active_reactions)
 
     return inactive_reactions
+
+
+def hard_knockout(model, genes, inplace=False, rename=None):
+    """ Create a mutant model with permanent gene knockouts.
+
+    Arguments:
+        model (CBModel): model
+        genes (list): genes to delete
+        inplace (bool): do not create a model copy (default: False)
+        rename (str): give a new id to the model (optional)
+
+    Returns:
+        model: mutant model
+    """
+
+    if not inplace:
+        model = model.copy()
+
+    for r_id in deleted_genes_to_reactions(model, genes):
+        model.set_flux_bounds(r_id, 0, 0)
+
+    if rename is not None:
+        model.id = rename
+
+    if not inplace:
+        return model
 
 
 def reaction_knockout(model, reactions, method='FBA', reference=None, constraints=None, solver=None):
@@ -65,6 +98,9 @@ def reaction_knockout(model, reactions, method='FBA', reference=None, constraint
     Returns:
         Solution: solution
     """
+
+    if isinstance(reactions, str):
+        genes = [reactions]
 
     _constraints = {}
 
