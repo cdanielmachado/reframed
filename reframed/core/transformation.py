@@ -37,7 +37,7 @@ def make_irreversible(model, inplace=True, reactions=None):
     """ Splits all reversible reactions into forward and backward directions.
 
     Arguments:
-        model : Model (or CBmodel)
+        model : Model (or CBModel)
         inplace (bool): change model inplace (default), otherwise create a copy first
         reactions (list) : split only reactions in this list (optional)
 

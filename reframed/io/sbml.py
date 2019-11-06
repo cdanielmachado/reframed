@@ -222,7 +222,7 @@ def load_metabolites(sbml_model, model, flavor=None, load_metadata=True):
 def load_metabolite(species, flavor=None, load_metadata=True):
     metabolite = Metabolite(species.getId(), species.getName(), species.getCompartment())
 
-    if flavor in {Flavor.BIGG, Flavor.FBC2}:
+    if flavor in {Flavor.BIGG.value, Flavor.FBC2.value}:
         fbc_species = species.getPlugin('fbc')
         if fbc_species.isSetChemicalFormula():
             formula = fbc_species.getChemicalFormula()

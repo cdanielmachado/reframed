@@ -1,6 +1,7 @@
 from ..core.model import AttrOrderedDict, ReactionType, Compartment, Metabolite
 from ..core.cbmodel import CBModel, CBReaction
 from math import inf
+from warnings import warn
 
 
 class Community(object):
@@ -10,6 +11,11 @@ class Community(object):
         self._merged_model = None
         self.reaction_map = None
         self.metabolite_map = None
+
+        model_ids = {model.id for model in models}
+
+        if len(model_ids) < len(models):
+            warn("Model ids are not unique, repeated models will be discarded.")
 
         for model in models:
             self.organisms[model.id] = model.copy() if copy_models else model
