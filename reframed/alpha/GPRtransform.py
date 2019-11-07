@@ -3,11 +3,11 @@ from ..core.model import Compartment, Metabolite
 from ..core.cbmodel import CBModel, CBReaction, GPRAssociation
 
 
-SPONTANEOUS = {'G_s0001', 'G_S0001', 'G_s_0001', 'G_S_0001', 'G_spontaneous', 'G_SPONTANEOUS',
-               's0001', 'S0001', 's_0001', 'S_0001', 'spontaneous', 'SPONTANEOUS'}
+SPONTANEOUS = {'G_s0001', 'G_S0001', 'G_s_0001', 'G_S_0001', 'G_spontaneous', 'G_SPONTANEOUS', 'G_UNKNOWN',
+               's0001', 'S0001', 's_0001', 'S_0001', 'spontaneous', 'SPONTANEOUS', 'UNKNOWN'}
 
 
-def gpr_transform(model, inplace=True, gene_prefix='G_', usage_prefix='u_', pseudo_genes=None):
+def gpr_transform(model, inplace=True, add_ribosome=False, gene_prefix='G_', usage_prefix='u_', pseudo_genes=None):
     """ Transformation method that integrates GPR associations directly into the stoichiometric matrix.
 
     Notes:
@@ -33,7 +33,8 @@ def gpr_transform(model, inplace=True, gene_prefix='G_', usage_prefix='u_', pseu
 
     mapping_rev = make_irreversible(model)
     mapping_iso = split_isozymes(model)
-    u_reactions = genes_to_species(model, gene_prefix=gene_prefix, usage_prefix=usage_prefix, pseudo_genes=pseudo_genes)
+    u_reactions = genes_to_species(model, add_ribosome=add_ribosome, gene_prefix=gene_prefix,
+                                   usage_prefix=usage_prefix, pseudo_genes=pseudo_genes)
 
     model.convert_fluxes = lambda x, net=True: merge_fluxes(x, mapping_rev, mapping_iso, net)
     model.convert_constraints = lambda x: convert_constraints(x, mapping_rev, mapping_iso)
@@ -71,7 +72,7 @@ def split_isozymes(model):
     return mapping
 
 
-def genes_to_species(model, gene_prefix='G_', usage_prefix='u_', pseudo_genes=None):
+def genes_to_species(model, add_ribosome=False, gene_prefix='G_', usage_prefix='u_', pseudo_genes=None):
 
     if pseudo_genes is None:
         pseudo_genes = SPONTANEOUS
@@ -80,12 +81,21 @@ def genes_to_species(model, gene_prefix='G_', usage_prefix='u_', pseudo_genes=No
     compartment = Compartment('genes', 'gene pool')
     model.add_compartment(compartment)
 
+    if add_ribosome:
+        ribosome = Metabolite("ribosome", "ribosome", "genes")
+        model.add_metabolite(ribosome)
+        r_synthesis = CBReaction("rib_synth", "ribosome synthesis", False, {"ribosome": 1})
+        model.add_reaction(r_synthesis)
+
     for gene in model.genes.values():
         if gene.id in pseudo_genes:
             continue
         model.add_metabolite(Metabolite(gene.id, gene.id, 'genes'))
         r_id = usage_prefix + gene.id[len(gene_prefix):]
-        reaction = CBReaction(r_id, r_id, False, {gene.id: 1})
+        stoichiometry = {gene.id: 1}
+        if add_ribosome:
+            stoichiometry["ribosome"] = -1
+        reaction = CBReaction(r_id, r_id, False, stoichiometry)
         model.add_reaction(reaction)
         new_reactions.append(r_id)
 

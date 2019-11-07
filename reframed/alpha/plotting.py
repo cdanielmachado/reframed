@@ -23,7 +23,7 @@ def plot_flux_bounds(range1, range2=None, values1=None, values2=None, reactions=
     except ImportError:
         raise RuntimeError("Matplotlib is not installed.")
 
-    if not reactions:
+    if reactions is None or len(reactions) == 0:
         reactions = list(range1.keys())
 
     if ax is None:
