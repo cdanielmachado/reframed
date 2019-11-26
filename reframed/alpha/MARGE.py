@@ -119,12 +119,22 @@ def marge(model, rel_expression, transformed=False, constraints_a=None, constrai
         solver.add_constraint(m_id + '_b', stoich_b, update=False)
 
     for r_id, ratio in rel_constraints.items():
-        constr = {}
-        expr_a = model.convert_id_to_expr(r_id, -ratio)
+        if isinstance(ratio, tuple):
+            lb, ub = ratio[0], ratio[1]
+        else:
+            lb, ub = ratio, ratio
+            
+        constr_lb = {}
+        constr_ub = {}
+        expr_a_lb = model.convert_id_to_expr(r_id, -lb)
+        expr_a_ub = model.convert_id_to_expr(r_id, -ub)
         expr_b = model.convert_id_to_expr(r_id, 1)
-        constr.update({r_id2 + '_a': val for r_id2, val in expr_a.items()})
-        constr.update({r_id2 + '_b': val for r_id2, val in expr_b.items()})
-        solver.add_constraint(r_id + '_rel', constr, update=False)
+        constr_lb.update({r_id2 + '_a': val for r_id2, val in expr_a_lb.items()})
+        constr_lb.update({r_id2 + '_b': val for r_id2, val in expr_b.items()})
+        constr_ub.update({r_id2 + '_a': val for r_id2, val in expr_a_ub.items()})
+        constr_ub.update({r_id2 + '_b': val for r_id2, val in expr_b.items()})
+        solver.add_constraint(r_id + '_rel_lb', constr_lb, '>', 0, update=False)
+        solver.add_constraint(r_id + '_rel_ub', constr_ub, '<', 0, update=False)
 
     for g_id, val in rel_expression.items():
         u_id_a = 'u_' + g_id[len(gene_prefix):] + '_a'

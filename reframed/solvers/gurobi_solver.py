@@ -234,7 +234,7 @@ class GurobiSolver(Solver):
         self.set_objective(linear, quadratic, minimize)
 
         # run the optimization
-        if pool_size == 0:
+        if pool_size <= 1:
 
             problem.optimize()
 

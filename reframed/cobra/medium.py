@@ -92,7 +92,6 @@ def minimal_medium(model, exchange_reactions=None, direction=-1, min_mass_weight
         multiple_compounds =[]
         no_compounds = []
         no_formula = []
-        multiple_formulas = []
         invalid_formulas = []
 
         for r_id in exchange_reactions:

@@ -311,7 +311,7 @@ class CplexSolver(Solver):
 
         # run the optimization
 
-        if pool_size == 0:
+        if pool_size <= 1:
 
             problem.solve()
 

@@ -553,7 +553,7 @@ class Model(object):
         else:
             metabolite_names = None
 
-        return self.reactions[r_id].to_string(metabolite_names)
+        print(self.reactions[r_id].to_string(metabolite_names))
 
     def to_string(self, use_names=False):
         """ Print the model to a text based representation.
@@ -565,7 +565,12 @@ class Model(object):
             str: model as a string
         """
 
-        return '\n'.join(self.print_reaction(r_id, use_names) for r_id in self.reactions)
+        if use_names:
+            metabolite_names = {m_id: met.name for m_id, met in self.metabolites.items()}
+        else:
+            metabolite_names = None
+
+        return '\n'.join(rxn.to_string(metabolite_names) for rxn in self.reactions.values())
 
     def summary(self):
         print("Metabolites:")

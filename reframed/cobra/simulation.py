@@ -332,7 +332,7 @@ def lMOMA(model, reference=None, constraints=None, reactions=None, solver=None):
 
 
 def ROOM(model, reference=None, constraints=None, wt_constraints=None, reactions=None, solver=None,
-         delta=0.03, epsilon=0.001, pool_size=0):
+         delta=0.03, epsilon=0.001, solutions=1, use_pool=False):
     """ Run a Regulatory On/Off Minimization (ROOM) simulation:
 
     Arguments:
@@ -344,7 +344,9 @@ def ROOM(model, reference=None, constraints=None, wt_constraints=None, reactions
         solver (Solver): solver instance instantiated with the model, for speed (optional)
         delta (float): relative tolerance (default: 0.03)
         epsilon (float): absolute tolerance (default: 0.001)
-        pool_size (int): set to nonzero value to return a pool of solutions (default: 0)
+        solutions (int): number of solutions to compute (default: 1)
+        use_pool (bool) use solver solution pool (default: False)
+        opt_relax (int) optimality relaxation for multiple solutions (default: 0)
 
     Returns:
         Solution: solution
@@ -387,9 +389,28 @@ def ROOM(model, reference=None, constraints=None, wt_constraints=None, reactions
             solver.add_constraint('c' + r_id + '_l', {r_id: 1, y_i: (w_l - L)}, '>', w_l, update=False)
         solver.update()
 
-    solution = solver.solve(objective, minimize=True, constraints=constraints, pool_size=pool_size)
+    if solutions == 1:
+        result = solver.solve(objective, minimize=True, constraints=constraints)
+    elif use_pool:
+        result = solver.solve(objective, minimize=True, constraints=constraints, pool_size=solutions)
+    else:
+        result = []
+        last = None
 
-    if pool_size == 0:
-        solution.reference = reference
+        for i in range(0, solutions):
+            if i > 0:
+                constr_id = f"iteration_{i}"
+                previous_sol = {x: 1 for x in last}
+                solver.add_constraint(constr_id, previous_sol, '<', len(last) - 1)
 
-    return solution
+            solution = solver.solve(objective, minimize=True, constraints=constraints)
+
+            if solution.status != Status.OPTIMAL:
+                break
+
+            last = [x for x, val in solution.values.items() if x.startswith("y_") and val > 0.5]
+            result.append(solution)
+
+    return result
+
+
