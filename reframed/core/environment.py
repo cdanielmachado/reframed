@@ -78,6 +78,26 @@ class Environment(AttrOrderedDict):
         if not inplace:
             return constraints
 
+    def simplify(self, inplace=False):
+        """ Keep only uptake reactions for the respective medium. """
+
+        if inplace:
+            env = self
+        else:
+            env = self.copy()
+
+        to_remove = []
+
+        for r_id, (lb, ub) in env.items():
+            if lb >= 0:
+                to_remove.append(r_id)
+
+        for r_id in to_remove:
+            del env[r_id]
+
+        if not inplace:
+            return env
+
     @staticmethod
     def from_reactions(reactions, max_uptake=10.0):
         """
