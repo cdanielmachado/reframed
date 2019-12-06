@@ -25,7 +25,8 @@ from .cobra.knockout import gene_knockout, hard_knockout, reaction_knockout, ess
 from .cobra.transcriptomics import GIMME, eFlux
 
 from .community.model import Community
-from .community.simulation import SteadyCom, SteadierCom, SteadyComVA, SteadierComVA
+from .community.simulation import SteadierCom, SteadierComVA
+from .community.SteadyCom import SteadyCom, SteadyComVA
 
 from .external.escher import escher_maps, fluxes2escher
 from .external.cobrapy import to_cobrapy, from_cobrapy

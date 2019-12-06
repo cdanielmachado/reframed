@@ -10,14 +10,6 @@ SPONTANEOUS = {'G_s0001', 'G_S0001', 'G_s_0001', 'G_S_0001', 'G_spontaneous', 'G
                's0001', 'S0001', 's_0001', 'S_0001', 'spontaneous', 'SPONTANEOUS'}
 
 
-def SteadyCom(community, constraints=None, solver=None):
-    return SteadierCom(community, constraints=constraints, w_e=0, w_r=0, solver=solver)
-
-
-def SteadyComVA(community, obj_frac=1, constraints=None, solver=None):
-    return SteadierComVA(community, obj_frac=obj_frac, constraints=constraints, w_e=0, w_r=0, solver=solver)
-
-
 def SteadierCom(community, fixed_growth=None, w_e=0.001, w_r=0.5, min_uptake=False, parsimony=False,
                 constraints=None, solver=None):
 
