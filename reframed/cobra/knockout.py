@@ -100,7 +100,7 @@ def reaction_knockout(model, reactions, method='FBA', reference=None, constraint
     """
 
     if isinstance(reactions, str):
-        genes = [reactions]
+        reactions = [reactions]
 
     _constraints = {}
 
