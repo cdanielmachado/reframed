@@ -5,63 +5,65 @@ from ..core.model import ReactionType
 from ..solvers import solver_instance
 from warnings import warn
 from math import inf, isinf
+from random import lognormvariate
 
 SPONTANEOUS = {'G_s0001', 'G_S0001', 'G_s_0001', 'G_S_0001', 'G_spontaneous', 'G_SPONTANEOUS',
                's0001', 'S0001', 's_0001', 'S_0001', 'spontaneous', 'SPONTANEOUS'}
 
 
-def SteadierCom(community, fixed_growth=None, w_e=0.001, w_r=0.5, min_uptake=False, parsimony=False,
-                constraints=None, solver=None):
-
-    if fixed_growth is None:
-        growth = 1
-    else:
-        growth = fixed_growth
+def SteadierCom(community, objective=None, growth=None, abundance=None, proteome=False, min_uptake=False,
+                parsimony=False, constraints=None, solver=None, w_e=0.001, w_r=0.5, x_rel_tol=1):
 
     if solver is None:
-        solver = build_problem(community, growth=growth, w_e=w_e, w_r=w_r, min_uptake=min_uptake, parsimony=parsimony)
+        solver = build_problem(community, growth=growth, abundance=abundance, proteome=proteome, min_uptake=min_uptake,
+                               parsimony=parsimony, w_e=w_e, w_r=w_r, x_rel_tol=x_rel_tol)
 
-    objective = {}
-    minimize = True
+    if parsimony and min_uptake:
+        warn("Cannot have two secondary objectives: parsimony and minimum uptake.")
 
-    if min_uptake:
-        tmp_obj = min_uptake_objective(community.merged_model)
-        objective.update(tmp_obj)
+    minimize = False
 
-    if parsimony:
-        tmp_obj = {r_id: 1 for org_vars in solver.enz_vars.values() for r_id in org_vars}
-        objective.update(tmp_obj)
+    if objective is None:
+        objective = {}
 
-    if not objective:
-        objective = {community.merged_model.biomass_reaction: 1}
-        minimize = False
+        if min_uptake:
+            tmp_obj = min_uptake_objective(community.merged_model)
+            objective.update(tmp_obj)
+            minimize = True
+        elif parsimony:
+            tmp_obj = {r_id: 1 for org_vars in solver.enz_vars.values() for r_id in org_vars}
+            objective.update(tmp_obj)
+            minimize = True
+        else:
+            objective[community.merged_model.biomass_reaction] = 1
 
-    if fixed_growth is None:
+    if growth is None:
         sol = binary_search(solver, objective, minimize=minimize, constraints=constraints)
     else:
         sol = solver.solve(objective, minimize=minimize, constraints=constraints)
 
+    if sol.status != Status.OPTIMAL:
+        warn("Failed to find optimal solution.")
+        return
+
     solution = CommunitySolution(community, sol)
     solution.solver = solver
 
-    if min_uptake:
-        solution.total_uptake = sum(-sol.values[r_id]*objective["f_" + r_id] for r_id in solver.upt_vars)
+#    if min_uptake:
+#        solution.total_uptake = sum(-sol.values[r_id]*objective["f_" + r_id] for r_id in solver.upt_vars)
 
     return solution
 
 
-def SteadierComVA(community, fixed_growth=None, obj_frac=1, w_e=0.001, w_r=0.5, constraints=None, solver=None):
+def SteadierComVA(community, growth=None, obj_frac=1, proteome=False, w_e=0.001, w_r=0.5, constraints=None):
 
-    if solver is None:
-        solver = build_problem(community, w_e=w_e, w_r=w_r)
+    solver = build_problem(community, proteome=proteome, w_e=w_e, w_r=w_r)
 
     objective = {community.merged_model.biomass_reaction: 1}
 
-    if fixed_growth is None:
+    if growth is None:
         sol = binary_search(solver, objective, constraints=constraints)
         growth = obj_frac * sol.values[community.merged_model.biomass_reaction]
-    else:
-        growth = fixed_growth
 
     solver.update_growth(growth)
 
@@ -78,14 +80,50 @@ def SteadierComVA(community, fixed_growth=None, obj_frac=1, w_e=0.001, w_r=0.5, 
     return variability
 
 
-def build_problem(community, growth=1, w_e=0.001, w_r=0.5, min_uptake=False, parsimony=False, bigM=1000):
+def SteadierComSample(community, n=10, growth=None, obj_frac=1, proteome=False, w_e=0.001, w_r=0.5, constraints=None):
+
+    solver = build_problem(community, proteome=proteome, w_e=w_e, w_r=w_r)
+
+    objective = {community.merged_model.biomass_reaction: 1}
+
+    if growth is None:
+        sol = binary_search(solver, objective, constraints=constraints)
+        growth = obj_frac * sol.values[community.merged_model.biomass_reaction]
+
+    solver.update_growth(growth)
+
+    sols = []
+
+    for i in range(n):
+        objective = {f"x_{org_id}": lognormvariate(0, 1) for org_id in community.organisms}
+        sol = solver.solve(objective, minimize=False, constraints=constraints)
+        sols.append(CommunitySolution(community, sol))
+
+    return sols
+
+
+def build_problem(community, growth=None, abundance=None, proteome=False, min_uptake=False, parsimony=False,
+                  w_e=0.001, w_r=0.5, x_rel_tol=1, bigM=1000):
 
     solver = solver_instance()
     model = community.merged_model
 
+    if growth is None:
+        growth = 1
+
+    if abundance is not None:
+        norm = sum(abundance.values())
+        abundance = {org_id: val / norm for org_id, val in abundance.items()}
+
     # create biomass variables
     for org_id in community.organisms:
-        solver.add_variable(f"x_{org_id}", 0, 1, update=False)
+        if abundance and org_id in abundance:
+            x_i = abundance[org_id]
+            lb = max(x_i / x_rel_tol, 0)
+            ub = min(x_i * x_rel_tol, 1)
+        else:
+            lb, ub = 0, 1
+        solver.add_variable(f"x_{org_id}", lb, ub, update=False)
 
     # create all community reactions
     for r_id, reaction in model.reactions.items():
@@ -112,7 +150,7 @@ def build_problem(community, growth=1, w_e=0.001, w_r=0.5, min_uptake=False, par
     solver.enz_vars = enz_vars
     tmp = {}
 
-    if w_e > 0 or parsimony:
+    if proteome or parsimony:
         for org_id, organism in community.organisms.items():
             enz_vars[org_id] = []
             tmp[org_id] = []
@@ -169,13 +207,14 @@ def build_problem(community, growth=1, w_e=0.001, w_r=0.5, min_uptake=False, par
                 if ub != 0:
                     solver.add_constraint(f"ub_{new_id}", {f"x_{org_id}": ub, new_id: -1}, '>', 0, update=False)
 
-        if w_e > 0 or parsimony:
+        if proteome or parsimony:
             # constrain absolute values
             for r_id in tmp[org_id]:
                 pos, neg = r_id + '+', r_id + '-'
                 solver.add_constraint('c' + pos, {r_id: -1, pos: 1}, '>', 0, update=False)
                 solver.add_constraint('c' + neg, {r_id: 1, neg: 1}, '>', 0, update=False)
 
+        if proteome:
             # protein allocation constraints
             alloc_constr = {r_id: w_e for r_id in enz_vars[org_id]}
             org_growth = community.reaction_map[(org_id, organism.biomass_reaction)]

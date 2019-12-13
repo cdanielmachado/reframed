@@ -102,6 +102,18 @@ class CommunitySolution(object):
 
         return exchanges
 
+    def cross_feeding(self, abstol=1e-6):
+        exchanges = self.compute_exchanges()
+        cross_all = []
+
+        for m_id in self.community.merged_model.get_external_metabolites():
+            r_out = {x: r for (x, m), r in exchanges.items() if m == m_id and r > abstol}
+            r_in = {x: -r for (x, m), r in exchanges.items() if m == m_id and -r > abstol}
+            total = max(sum(r_out.values()), sum(r_in.values()))
+            cross = [(o1, o2, m_id, r1 * r2 / total) for o1, r1 in r_out.items() for o2, r2 in r_in.items()]
+            cross_all.extend(cross)
+        return cross_all
+
     def print_exchanges(self, m_id=None, abstol=1e-9):
 
         model = self.community.merged_model
@@ -125,9 +137,9 @@ class CommunitySolution(object):
                 rate = coeff*flux
 
                 if rate > abstol:
-                    entries.append(('--> o', r_id, rate))
+                    entries.append(('=> *   ', "in", rate))
                 elif rate < -abstol:
-                    entries.append(('o -->', r_id, rate))
+                    entries.append(('   * =>', "out", rate))
 
             for org_id in self.community.organisms:
 
@@ -136,13 +148,13 @@ class CommunitySolution(object):
 
                 rate = self.exchange_map[(org_id, m_id)]
                 if rate > abstol:
-                    entries.append(('--> o', org_id, rate))
+                    entries.append(('O --> *', org_id, rate))
                 elif rate < -abstol:
-                    entries.append(('o -->', org_id, rate))
+                    entries.append(('* --> O', org_id, rate))
 
             if entries:
                 print(m_id)
-                entries.sort(key=lambda x: -abs(x[2]))
+                entries.sort(key=lambda x: x[2])
 
                 for (sense, org_id, rate) in entries:
                     print(f'[ {sense} ] {org_id:<12} {rate:< 10.6g}')
