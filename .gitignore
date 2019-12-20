@@ -10,3 +10,4 @@ dist/*
 .eggs/*
 .tox/*
 reframed/alpha/geneswitch.py
+.vscode/*

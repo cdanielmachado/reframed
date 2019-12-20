@@ -196,12 +196,18 @@ class CplexSolver(Solver):
         """ Update internal structure. Used for efficient lazy updating. """
 
         if self._cached_vars:
-            var_ids, lbs, ubs, vartypes = list(zip(*self._cached_vars))
+            var_ids = [x[0] for x in self._cached_vars]
+            lbs = [x[1] for x in self._cached_vars]
+            ubs = [x[2] for x in self._cached_vars]
+            vartypes = [x[3] for x in self._cached_vars]
             self.add_variables(var_ids, lbs, ubs, vartypes)
             self._cached_vars = []
 
         if self._cached_constrs:
-            constr_ids, lhs, senses, rhs = list(zip(*self._cached_constrs))
+            constr_ids = [x[0] for x in self._cached_constrs]
+            lhs = [x[1] for x in self._cached_constrs]
+            senses = [x[2] for x in self._cached_constrs]
+            rhs = [x[3] for x in self._cached_constrs]
             self.add_constraints(constr_ids, lhs, senses, rhs)
             self._cached_constrs = []
 
