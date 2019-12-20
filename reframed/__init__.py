@@ -15,6 +15,7 @@ from .core.transformation import make_irreversible, simplify
 from .solvers import set_default_solver, solver_instance
 
 from .io.sbml import load_cbmodel, save_cbmodel
+from .io.cache import ModelCache
 
 from .cobra.variability import FVA, blocked_reactions
 from .cobra.plotting import plot_flux_envelope

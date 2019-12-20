@@ -130,7 +130,7 @@ def build_problem(community, growth=1, bigM=1000):
     return solver
 
 
-def binary_search(solver, objective, obj_frac=1, minimize=False, max_iters=100, abs_tol=1e-3, constraints=None):
+def binary_search(solver, objective, obj_frac=1, minimize=False, max_iters=20, abs_tol=1e-3, constraints=None):
 
     previous_value = 0
     value = 1

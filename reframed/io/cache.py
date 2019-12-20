@@ -1,12 +1,18 @@
 from .sbml import load_cbmodel
-
+from types import FunctionType
 
 class ModelCache:
     """ Utility to keep a cache of models with a lazy loading approach. """
 
-    def __init__(self, ids, paths, load_args=None, post_processing=None):
+    def __init__(self, ids, paths=None, load_args=None, post_processing=None):
 
-        self.paths = dict(zip(ids, paths))
+        if isinstance(paths, FunctionType):
+            self.paths = {x: paths(x) for x in ids}
+        elif isinstance(paths, list):
+            self.paths = dict(zip(ids, paths))
+        else:
+            raise RuntimeError("Argument *paths* must be either a list or formatting function.")
+
         self.cache = dict()
         self.load_args = load_args if load_args is not None else {}
         self.post_processing = post_processing

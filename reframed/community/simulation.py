@@ -94,7 +94,7 @@ def SteadierComSample(community, n=10, growth=None, obj_frac=1, proteome=False, 
 
     sols = []
 
-    for i in range(n):
+    for _ in range(n):
         objective = {f"x_{org_id}": lognormvariate(0, 1) for org_id in community.organisms}
         sol = solver.solve(objective, minimize=False, constraints=constraints)
         sols.append(CommunitySolution(community, sol))
@@ -257,7 +257,7 @@ def min_uptake_objective(model):
     return objective
 
 
-def binary_search(solver, objective, obj_frac=1, minimize=False, max_iters=100, abs_tol=1e-3, constraints=None):
+def binary_search(solver, objective, obj_frac=1, minimize=False, max_iters=20, abs_tol=1e-3, constraints=None):
 
     previous_value = 0
     value = 1

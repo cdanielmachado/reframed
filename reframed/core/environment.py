@@ -33,8 +33,7 @@ class Environment(AttrOrderedDict):
         """
 
         if fmt_func is None:
-            def fmt_func(x):
-                return x[5:-2]
+            fmt_func = lambda x: x[5:-2]
         elif not isinstance(fmt_func, FunctionType):
             raise RuntimeError("fmt_func argument must be a string or function.")
 
@@ -88,7 +87,7 @@ class Environment(AttrOrderedDict):
 
         to_remove = []
 
-        for r_id, (lb, ub) in env.items():
+        for r_id, (lb, _) in env.items():
             if lb >= 0:
                 to_remove.append(r_id)
 
@@ -136,13 +135,10 @@ class Environment(AttrOrderedDict):
         """
 
         if fmt_func is None:
-            def fmt_func(x):
-                return f"R_EX_{x}_e"
+            fmt_func = lambda x: f"R_EX_{x}_e"
         elif isinstance(fmt_func, str):
             fmt_str = fmt_func
-
-            def fmt_func(x):
-                return fmt_str.format(x)
+            fmt_func = lambda x: fmt_str.format(x)
         elif not isinstance(fmt_func, FunctionType):
             raise RuntimeError("fmt_func argument must be a string or function.")
 
