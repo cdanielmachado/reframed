@@ -11,46 +11,64 @@ SPONTANEOUS = {'G_s0001', 'G_S0001', 'G_s_0001', 'G_S_0001', 'G_spontaneous', 'G
                's0001', 'S0001', 's_0001', 'S_0001', 'spontaneous', 'SPONTANEOUS'}
 
 
-def SteadierCom(community, objective=None, growth=None, abundance=None, proteome=False, min_uptake=False,
-                parsimony=False, constraints=None, solver=None, w_e=0.001, w_r=0.5, x_rel_tol=1):
+def SteadierCom(community, objective1=None, objective2=None, growth=None, abundance=None, proteome=False, 
+                constraints=None, solver=None, w_e=0.001, w_r=0.5, obj1_tol=0.01):
+    
+    if objective2 is None:
+        objectives = [objective1]
+    else:
+        objectives = [objective1, objective2]
+
+    if "abundance" in objectives and abundance is None:
+        raise RuntimeError("Experimental abundance values must be provided when using the abundance objective.")
 
     if solver is None:
-        solver = build_problem(community, growth=growth, abundance=abundance, proteome=proteome, min_uptake=min_uptake,
-                               parsimony=parsimony, w_e=w_e, w_r=w_r, x_rel_tol=x_rel_tol)
+        solver = build_problem(community, growth=growth, abundance=abundance, proteome=proteome,
+            min_uptake=("uptake" in objectives), parsimony=("parsimony" in objectives), w_e=w_e, w_r=w_r)
 
-    if parsimony and min_uptake:
-        warn("Cannot have two secondary objectives: parsimony and minimum uptake.")
-
-    minimize = False
-
-    if objective is None:
-        objective = {}
-
-        if min_uptake:
-            tmp_obj = min_uptake_objective(community.merged_model)
-            objective.update(tmp_obj)
+    for i, objective in enumerate(objectives):
+        if objective is None or objective == "growth":
+            obj_func = {community.merged_model.biomass_reaction: 1}
+            minimize = False
+        elif objective == "abundance":
+            obj_func = {x: 1 for x in solver.abd_vars}
             minimize = True
-        elif parsimony:
-            tmp_obj = {r_id: 1 for org_vars in solver.enz_vars.values() for r_id in org_vars}
-            objective.update(tmp_obj)
+        elif objective == "parsimony":
+            if abundance is None:
+                obj_func = {r_id: 1 for org_vars in solver.enz_vars.values() for r_id in org_vars}
+            else:
+                obj_func = {r_id: 1 / abundance[org_id] for org_id, org_vars in solver.enz_vars.items() 
+                            for r_id in org_vars}
             minimize = True
+        elif objective == "uptake":
+            obj_func = solver.upt_vars
+            minimize = True
+        elif isinstance(objective, dict):
+            obj_func = objective
+            minimize = False
         else:
-            objective[community.merged_model.biomass_reaction] = 1
+            raise RuntimeError(f"Invalid objective: {objective}.")
 
-    if growth is None:
-        sol = binary_search(solver, objective, minimize=minimize, constraints=constraints)
-    else:
-        sol = solver.solve(objective, minimize=minimize, constraints=constraints)
+        if growth is None:
+            sol = binary_search(solver, obj_func, minimize=minimize, constraints=constraints)
+        else:
+            sol = solver.solve(obj_func, minimize=minimize, constraints=constraints)
 
-    if sol.status != Status.OPTIMAL:
-        warn("Failed to find optimal solution.")
-        return
+#        solver.write_to_file(f"obj{i+1}.lp")
 
-    solution = CommunitySolution(community, sol)
-    solution.solver = solver
-
-#    if min_uptake:
-#        solution.total_uptake = sum(-sol.values[r_id]*objective["f_" + r_id] for r_id in solver.upt_vars)
+        if sol.status == Status.OPTIMAL:
+            if i == len(objectives) - 1:
+                solution = CommunitySolution(community, sol)
+                solution.solver = solver
+            else:
+                if minimize:
+                    solver.add_constraint("obj1", obj_func, '<', sol.fobj * (1 + obj1_tol))
+                else:
+                    solver.add_constraint("obj1", obj_func, '>', sol.fobj * (1 - obj1_tol))
+                solver.update()
+        else:
+            warn("Failed to find optimal solution.")
+            return
 
     return solution
 
@@ -103,7 +121,7 @@ def SteadierComSample(community, n=10, growth=None, obj_frac=1, proteome=False, 
 
 
 def build_problem(community, growth=None, abundance=None, proteome=False, min_uptake=False, parsimony=False,
-                  w_e=0.001, w_r=0.5, x_rel_tol=1, bigM=1000):
+                  w_e=0.001, w_r=0.5, bigM=1000):
 
     solver = solver_instance()
     model = community.merged_model
@@ -115,15 +133,20 @@ def build_problem(community, growth=None, abundance=None, proteome=False, min_up
         norm = sum(abundance.values())
         abundance = {org_id: val / norm for org_id, val in abundance.items()}
 
+    # temporary variables for abundance constraints
+    abd_vars = []
+    solver.abd_vars = abd_vars
+
     # create biomass variables
     for org_id in community.organisms:
+        solver.add_variable(f"x_{org_id}", 0, 1, update=False)
+        
+        # temporary variables for abundance constraints
         if abundance and org_id in abundance:
-            x_i = abundance[org_id]
-            lb = max(x_i / x_rel_tol, 0)
-            ub = min(x_i * x_rel_tol, 1)
-        else:
-            lb, ub = 0, 1
-        solver.add_variable(f"x_{org_id}", lb, ub, update=False)
+            d_pos, d_neg = f"d_{org_id}_+", f"d_{org_id}_-"
+            solver.add_variable(d_pos, 0, 1, update=False)
+            solver.add_variable(d_neg, 0, 1, update=False)
+            abd_vars.extend([d_pos, d_neg])
 
     # create all community reactions
     for r_id, reaction in model.reactions.items():
@@ -135,15 +158,17 @@ def build_problem(community, growth=None, abundance=None, proteome=False, min_up
             solver.add_variable(r_id, lb, ub, update=False)
 
     # temporary variables for unidirectional values of uptake fluxes
-    upt_vars = []
+    upt_vars = {}
     solver.upt_vars = upt_vars
 
     if min_uptake:
         for r_id in model.get_exchange_reactions():
-            ub = -model.reactions[r_id].lb
-            if ub > 0:
-                solver.add_variable('f_' + r_id, 0, ub, update=False)
-                upt_vars.append(r_id)
+            if model.reactions[r_id].lb < 0:
+                weight = get_mol_weight(model, r_id)
+                if weight is not None:
+                    ub = -model.reactions[r_id].lb
+                    solver.add_variable('f_' + r_id, 0, ub, update=False)
+                    upt_vars['f_' + r_id] = weight
 
     # temporary variables for computing absolute values of enzymatic reactions
     enz_vars = {}
@@ -222,10 +247,16 @@ def build_problem(community, growth=None, abundance=None, proteome=False, min_up
             alloc_constr[f"x_{org_id}"] = -1
             solver.add_constraint(f"prot_{org_id}", alloc_constr, '<', 0, update=True)
 
+        if abundance and org_id in abundance:
+            d_pos, d_neg = f"d_{org_id}_+", f"d_{org_id}_-"
+            solver.add_constraint('c' + d_pos, {f"x_{org_id}": -1, d_pos: 1}, '>', -abundance[org_id], update=False)
+            solver.add_constraint('c' + d_neg, {f"x_{org_id}": 1, d_neg: 1}, '>', abundance[org_id], update=False)
+
     # constrain uptake fluxes to negative part of exchange reactions
     if min_uptake:
-        for r_id in upt_vars:
-            solver.add_constraint('c_' + r_id, {r_id: 1, 'f_' + r_id: 1}, '>', 0, update=False)
+        for f_id, weight in upt_vars.items():
+            r_id = f_id[2:]
+            solver.add_constraint('c_' + r_id, {r_id: 1, f_id: 1}, '>', 0, update=False)
 
     solver.update()
 
@@ -239,22 +270,11 @@ def build_problem(community, growth=None, abundance=None, proteome=False, min_up
     return solver
 
 
-def min_uptake_objective(model):
-
-    objective = {}
-
-    for r_id in model.get_exchange_reactions():
-
-        if model.reactions[r_id].lb < 0:
-            compounds = model.reactions[r_id].get_substrates()
-            metabolite = model.metabolites[compounds[0]]
-            formula = metabolite.metadata.get('FORMULA', '')
-            weight = molecular_weight(formula)
-
-            if weight is not None:
-                objective['f_' + r_id] = weight
-
-    return objective
+def get_mol_weight(model, r_id):
+    compounds = model.reactions[r_id].get_substrates()
+    metabolite = model.metabolites[compounds[0]]
+    formula = metabolite.metadata.get('FORMULA', '')
+    return molecular_weight(formula)
 
 
 def binary_search(solver, objective, obj_frac=1, minimize=False, max_iters=20, abs_tol=1e-3, constraints=None):
