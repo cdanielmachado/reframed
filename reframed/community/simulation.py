@@ -67,7 +67,7 @@ def SteadierCom(community, objective1=None, objective2=None, growth=None, abunda
                     solver.add_constraint("obj1", obj_func, '>', sol.fobj * (1 - obj1_tol))
                 solver.update()
         else:
-            warn("Failed to find optimal solution.")
+#            warn("Failed to find optimal solution.")
             return
 
     return solution
