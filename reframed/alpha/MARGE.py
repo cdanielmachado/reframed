@@ -18,8 +18,8 @@ def marge(model, rel_expression, transformed=False, constraints_a=None, constrai
         model (CBModel): organism model
         rel_expression (dict): relative gene expression (condition B / condition A)
         transformed (bool): True if the model is already in extended GPR format (default: False)
-        constraints_a (dict): additional constrants to use for condition A (optional)
-        constraints_b (dict): additional constrants to use for condition B (optional)
+        constraints_a (dict): additional constraints to use for condition A (optional)
+        constraints_b (dict): additional constraints to use for condition B (optional)
         rel_constraints (dict): relative constraints between conditions (such as flux ratios) (default: False)
         growth_frac_a (float): minimum growth rate in condition A (default: 0.1)
         growth_frac_b (float): minimum growth rate in condition B (default: 0.1)
@@ -40,6 +40,8 @@ def marge(model, rel_expression, transformed=False, constraints_a=None, constrai
 
     if not transformed:
         model = gpr_transform(model, inplace=False, gene_prefix=gene_prefix, pseudo_genes=pseudo_genes)
+
+    rel_expression = {x: y for x, y in rel_expression.items() if x in model.genes}
 
     if constraints_a is None:
         constraints_a = {}
