@@ -92,7 +92,7 @@ class CBReaction(Reaction):
         Reaction.__init__(self, reaction_id, name=name, reversible=reversible, stoichiometry=stoichiometry,
                           regulators=regulators, reaction_type=reaction_type)
 
-        self.lb = lb
+        self.lb = 0 if reversible == False and lb < 0 else lb
         self.ub = ub
         self.objective = objective
         self.gpr = gpr_association
