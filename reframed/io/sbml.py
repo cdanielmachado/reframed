@@ -16,6 +16,7 @@ from warnings import warn
 
 class Flavor(Enum):
     COBRA = 'cobra'  # legacy cobra format
+    UCSD = 'ucsd'  # legacy cobra format with BiGG notation
     FBC2 = 'fbc2'  # sbml-fbc2 format
     BIGG = 'bigg'  # fbc2 with BiGG notation
 
@@ -131,7 +132,7 @@ def load_cbmodel(filename, flavor=Flavor.FBC2.value, exchange_detection=None, ex
     """
 
     if exchange_detection is None:
-        if flavor == Flavor.BIGG.value:
+        if flavor in {Flavor.BIGG.value, Flavor.UCSD.value}:
             exchange_detection = re.compile(r'^R_EX_')
         else:
             exchange_detection = 'unbalanced'
@@ -147,7 +148,7 @@ def load_cbmodel(filename, flavor=Flavor.FBC2.value, exchange_detection=None, ex
     load_metabolites(sbml_model, model, flavor, load_metadata)
     load_reactions(sbml_model, model, True, load_metadata)
 
-    if flavor == Flavor.COBRA.value:
+    if flavor in {Flavor.COBRA.value, Flavor.UCSD.value}:
         load_cobra_bounds(sbml_model, model)
         load_cobra_objective(sbml_model, model)
         if load_gprs:
