@@ -36,8 +36,10 @@ class CommunitySolution(object):
 
         self.growth = solution.values[model.biomass_reaction]
 
-        self.abundance = {org_id: solution.values[f"x_{org_id}"]
-                          for org_id in self.community.organisms}
+        self.abundance = {}
+        for org_id, organism in self.community.organisms.items():
+            growth_i = self.community.reaction_map[(org_id, organism.biomass_reaction)]
+            self.abundance[org_id] = solution.values[growth_i] / self.growth
 
         self.exchange = {r_id: solution.values[r_id]
                          for r_id in model.get_exchange_reactions()}
