@@ -113,7 +113,8 @@ class CommunitySolution(object):
             cross_all.extend(cross)
 
         if as_df:
-            cross_all = pd.DataFrame(cross_all, columns=["donor", "receiver", "compound", "rate"])
+            from pandas import DataFrame
+            cross_all = DataFrame(cross_all, columns=["donor", "receiver", "compound", "rate"])
 
         return cross_all
 
@@ -134,8 +135,9 @@ class CommunitySolution(object):
         flow = {key: val for key, val in flow.items() if val > abstol}
 
         if as_df:
+            from pandas import DataFrame
             flow = [(o1, o2, val) for (o1, o2), val in flow.items()]
-            flow = pd.DataFrame(flow, columns=["donor", "receiver", "flow"])
+            flow = DataFrame(flow, columns=["donor", "receiver", "flow"])
 
         return flow
 
