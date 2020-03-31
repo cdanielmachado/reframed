@@ -1,7 +1,5 @@
 from ..solvers.solution import print_values, print_balance
 from ..core.elements import molecular_weight
-import pandas as pd
-
 
 class CommunitySolution(object):
 
