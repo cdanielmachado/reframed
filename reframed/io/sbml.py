@@ -277,9 +277,9 @@ def load_reaction(reaction, cb=False, load_metadata=True):
         m_id = modifier.getSpecies()
         sboterm = modifier.getSBOTermID()
 
-        if sboterm == SBO.ACTIVATOR_TAG:
+        if sboterm == SBO.ACTIVATOR_TAG.value:
             kind = RegulatorType.ACTIVATOR
-        elif sboterm == SBO.INHIBITOR_TAG:
+        elif sboterm == SBO.INHIBITOR_TAG.value:
             kind = RegulatorType.INHIBITOR
         else:
             kind = RegulatorType.UNKNOWN

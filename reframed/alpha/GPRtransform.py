@@ -7,7 +7,7 @@ SPONTANEOUS = {'G_s0001', 'G_S0001', 'G_s_0001', 'G_S_0001', 'G_spontaneous', 'G
                's0001', 'S0001', 's_0001', 'S_0001', 'spontaneous', 'SPONTANEOUS', 'UNKNOWN'}
 
 
-def gpr_transform(model, inplace=True, add_ribosome=False, gene_prefix='G_', usage_prefix='u_', pseudo_genes=None):
+def gpr_transform(model, inplace=True, add_proteome=False, gene_prefix='G_', usage_prefix='u_', pseudo_genes=None):
     """ Transformation method that integrates GPR associations directly into the stoichiometric matrix.
 
     Notes:
@@ -19,6 +19,7 @@ def gpr_transform(model, inplace=True, add_ribosome=False, gene_prefix='G_', usa
     Args:
         model (CBModel): original model
         inplace (bool): change model in place (default), otherwise create a copy first
+        add_proteome (bool): add a global proteome constraints (default: False)
         gene_prefix (str): prefix used for gene ids (default: 'G_')
         usage_prefix (str): prefix to create enzyme usage variables (default: 'u_')
         pseudo_genes (list): ignore pseudo/fake genes in the model (default: 's0001')
@@ -33,7 +34,7 @@ def gpr_transform(model, inplace=True, add_ribosome=False, gene_prefix='G_', usa
 
     mapping_rev = make_irreversible(model)
     mapping_iso = split_isozymes(model)
-    u_reactions = genes_to_species(model, add_ribosome=add_ribosome, gene_prefix=gene_prefix,
+    u_reactions = genes_to_species(model, add_proteome=add_proteome, gene_prefix=gene_prefix,
                                    usage_prefix=usage_prefix, pseudo_genes=pseudo_genes)
 
     model.convert_fluxes = lambda x, net=True: merge_fluxes(x, mapping_rev, mapping_iso, net)
@@ -72,7 +73,7 @@ def split_isozymes(model):
     return mapping
 
 
-def genes_to_species(model, add_ribosome=False, gene_prefix='G_', usage_prefix='u_', pseudo_genes=None):
+def genes_to_species(model, add_proteome=False, gene_prefix='G_', usage_prefix='u_', pseudo_genes=None):
 
     if pseudo_genes is None:
         pseudo_genes = SPONTANEOUS
@@ -81,10 +82,10 @@ def genes_to_species(model, add_ribosome=False, gene_prefix='G_', usage_prefix='
     compartment = Compartment('genes', 'gene pool')
     model.add_compartment(compartment)
 
-    if add_ribosome:
-        ribosome = Metabolite("ribosome", "ribosome", "genes")
-        model.add_metabolite(ribosome)
-        r_synthesis = CBReaction("rib_synth", "ribosome synthesis", False, {"ribosome": 1})
+    if add_proteome:
+        proteome = Metabolite("proteome", "proteome", "genes")
+        model.add_metabolite(proteome)
+        r_synthesis = CBReaction("proteome_synth", "proteome synthesis", False, {"proteome": 1})
         model.add_reaction(r_synthesis)
 
     for gene in model.genes.values():
@@ -93,8 +94,8 @@ def genes_to_species(model, add_ribosome=False, gene_prefix='G_', usage_prefix='
         model.add_metabolite(Metabolite(gene.id, gene.id, 'genes'))
         r_id = usage_prefix + gene.id[len(gene_prefix):]
         stoichiometry = {gene.id: 1}
-        if add_ribosome:
-            stoichiometry["ribosome"] = -1
+        if add_proteome:
+            stoichiometry["proteome"] = -1
         reaction = CBReaction(r_id, r_id, False, stoichiometry)
         model.add_reaction(reaction)
         new_reactions.append(r_id)
