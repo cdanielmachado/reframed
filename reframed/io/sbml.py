@@ -193,9 +193,9 @@ def detect_external_compartment(model, external_compartment):
                      for m_id, r_ids in m_r_lookup.items() for r_id in r_ids
                      if model.reactions[r_id].reaction_type == ReactionType.EXCHANGE]
 
-        ext_comp = max(set(ext_comps), key=ext_comps.count)
-
-        model.compartments[ext_comp].external = True
+        if ext_comps:
+            ext_comp = max(set(ext_comps), key=ext_comps.count)
+            model.compartments[ext_comp].external = True
 
 
 def load_compartments(sbml_model, model, load_metadata=True):

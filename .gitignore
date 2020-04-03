@@ -11,3 +11,4 @@ dist/*
 .tox/*
 reframed/alpha/geneswitch.py
 .vscode/*
+tests/main.py
