@@ -1,6 +1,7 @@
 from ..solvers.solution import print_values, print_balance
 from ..core.elements import molecular_weight
 
+
 class CommunitySolution(object):
 
     def __init__(self, community, solution):
@@ -116,12 +117,12 @@ class CommunitySolution(object):
 
         return cross_all
 
-    def mass_flow(self, as_df=False, abstol=1e-6):
+    def mass_flow(self, element=None, as_df=False, abstol=1e-6):
 
         def get_mass(x):
             met = self.community.merged_model.metabolites[x]
             formula = met.metadata.get('FORMULA', '')
-            mw = molecular_weight(formula)
+            mw = molecular_weight(formula, element=element)
             return 0.001 * mw
 
         entities = list(self.community.organisms) + [None]

@@ -37,14 +37,18 @@ def parse_formula(formula):
             for atom, coeff in re.findall(ELEMENT_RE, formula)}
 
 
-def molecular_weight(formula):
+def molecular_weight(formula, element=None):
+
     elements = parse_formula(formula)
 
-    missing = set(elements) - set(ATOMIC_WEIGHTS)
+    if element:
+        mw = elements.get(element, 0) * ATOMIC_WEIGHTS.get(element, 0)
+    else:
+        missing = set(elements) - set(ATOMIC_WEIGHTS)
 
-    if missing:
-        warn(f"Atomic weight not listed for elements: {missing}")
-        return
+        if missing:
+            warn(f"Atomic weight not listed for elements: {missing}")
 
-    return sum(ATOMIC_WEIGHTS[elem] * n for elem, n in elements.items())
+        mw = sum(ATOMIC_WEIGHTS.get(elem, 0) * n for elem, n in elements.items())
 
+    return mw
