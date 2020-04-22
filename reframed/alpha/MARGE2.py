@@ -6,11 +6,15 @@ from .GPRtransform import gpr_transform
 
 def marge(model, rel_expression, transformed=False, constraints_a=None, constraints_b=None,
           growth_frac_a=1.0, growth_frac_b=0.0, activation=0.0, gene_prefix='G_', pseudo_genes=None):
-    """ Metabolic Analysis with Relative Gene Expression (MARGE)
+    """ Metabolic Analysis with Relative Gene Expression 2.0 (MARGE2)
 
-    First step minimizes the objective (fluxes B - rel expr (B/A) * fluxes A)
+    This method integrates gene expression into flux balance analysis in two steps:
 
-    Second step adds a parsimony criteria (with a slight relaxation of the first objective)
+    - Compute enzyme usage fluxes for reference condition (condition A) using gene-pFBA [1].
+    - Compute enzyme usage fluxes for perturbed condition (condition B) using gene-lMOMA [1]
+       and the relative gene-expression data between the two conditions (B / A).
+
+    [1] Machado et al, PLoS Computational Biology, 2016.
 
     Args:
         model (CBModel): organism model
@@ -21,7 +25,6 @@ def marge(model, rel_expression, transformed=False, constraints_a=None, constrai
         growth_frac_a (float): minimum growth rate in condition A (default: 1.0)
         growth_frac_b (float): minimum growth rate in condition B (default: 0.0)
         gene_prefix (str): prefix used in gene identifiers (default: 'G_')
-
         pseudo_genes (list): pseudo-genes in model to ignore (e.g: 'spontaneous') (optional)
 
     Returns:
