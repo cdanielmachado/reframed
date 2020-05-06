@@ -12,3 +12,5 @@ dist/*
 reframed/alpha/geneswitch.py
 .vscode/*
 tests/main.py
+tests/gurobi.log
+tests/tmp.py

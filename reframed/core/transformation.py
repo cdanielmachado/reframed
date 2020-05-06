@@ -129,3 +129,63 @@ def disconnected_genes(model):
 
 def empty_compartments(model):
     return set(model.compartments) - {met.compartment for met in model.metabolites.values()}
+
+
+def rename(model, inplace=True, fmt_mets=None, fmt_rxns=None, fmt_comps=None, fmt_genes=None):
+    """
+    Rename model identifiers using formatting functions that transform the old identifiers.
+
+    Arguments:
+        model (Model): model
+        inplace (bool): change model in place (default), otherwise create a copy first
+        fmt_mets (function): function to format metabolite identifiers
+        fmt_rxns (function): function to format reaction identifiers
+        fmt_comps (function): function to format compartment identifiers
+        fmt_genes (function): function to format gene identifiers (only valid for instances of CBModel)
+    """
+
+    if not inplace:
+        model = model.copy()
+
+    if fmt_genes and not isinstance(model, CBModel):
+        raise RuntimeError("fmt_genes can only be used with constraint-based models (CBModel instance)")
+
+    if fmt_comps:
+        for c_id in list(model.compartments.keys()):
+            comp = model.compartments[c_id]
+            comp.id = fmt_comps(c_id)
+            model.compartments[comp.id] = comp
+            del model.compartments[c_id]
+
+    if fmt_genes:
+        for g_id in list(model.genes.keys()):
+            gene = model.genes[g_id]
+            gene.id = fmt_genes(g_id)
+            model.genes[gene.id] = gene
+            del model.genes[g_id]
+
+    for m_id in list(model.metabolites.keys()):
+        met = model.metabolites[m_id]
+        if fmt_comps:
+            met.compartment = fmt_comps(met.compartment)
+        if fmt_mets:
+            met.id = fmt_mets(m_id)
+            model.metabolites[met.id] = met
+            del model.metabolites[m_id]
+
+    for r_id in list(model.reactions.keys()):
+        rxn = model.reactions[r_id]
+        if fmt_mets:
+            for m_id in list(rxn.stoichiometry.keys()):
+                rxn.stoichiometry[fmt_mets(m_id)] = rxn.stoichiometry[m_id]
+                del rxn.stoichiometry[m_id]
+        if rxn.gpr is not None and fmt_genes:
+            for protein in rxn.gpr.proteins:
+                protein.genes = [fmt_genes(g_id) for g_id in protein.genes]
+        if fmt_rxns:
+            rxn.id = fmt_rxns(r_id)
+            model.reactions[rxn.id] = rxn
+            del model.reactions[r_id]
+
+    if not inplace:
+        return model
