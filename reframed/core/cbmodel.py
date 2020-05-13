@@ -354,6 +354,7 @@ class CBModel(Model):
 
         if lb is not None:
             self.reactions[r_id].lb = lb
+            self.reactions[r_id].reversible = bool(lb < 0)
 
         if ub is not None:
             self.reactions[r_id].ub = ub
