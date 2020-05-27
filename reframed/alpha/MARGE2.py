@@ -24,6 +24,7 @@ def marge(model, rel_expression, transformed=False, constraints_a=None, constrai
         constraints_b (dict): additional constraints to use for condition B (optional)
         growth_frac_a (float): minimum growth rate in condition A (default: 1.0)
         growth_frac_b (float): minimum growth rate in condition B (default: 0.0)
+        activation (float): reference value to use when reference flux is 0 (default 0.0)
         gene_prefix (str): prefix used in gene identifiers (default: 'G_')
         pseudo_genes (list): pseudo-genes in model to ignore (e.g: 'spontaneous') (optional)
 
