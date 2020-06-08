@@ -9,7 +9,6 @@ build/*
 dist/*
 .eggs/*
 .tox/*
-reframed/alpha/geneswitch.py
 .vscode/*
 tests/main.py
 tests/gurobi.log
