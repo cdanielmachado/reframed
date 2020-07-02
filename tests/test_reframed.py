@@ -139,7 +139,7 @@ class TestCommunity(unittest.TestCase):
     def test_FBA(self):
         self.model = self.community.merged_model
         self.obj_id = self.model.biomass_reaction
-        env = Environment.from_compounds(self.medium, fmt_func=lambda x: f"R_EX_M_{x}_e")
+        env = Environment.from_compounds(self.medium)
         env = env.apply(self.model, inplace=False)
         sol = FBA(self.model, constraints=env)
         self.assertGreater(sol.values[self.obj_id], MIN_GROWTH)

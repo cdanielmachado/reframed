@@ -13,3 +13,5 @@ dist/*
 tests/main.py
 tests/gurobi.log
 tests/tmp.py
+tests/data/model_cobra.xml.gz
+tests/data/model_fbc2.xml.gz

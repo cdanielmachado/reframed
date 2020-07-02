@@ -144,7 +144,8 @@ class Community(object):
         # Add exchange reactions
 
         for m_id in ext_mets:
-            rxn = CBReaction(f"R_EX_{m_id}", reversible=True, stoichiometry={m_id: -1},
+            r_id = f"R_EX_{m_id[2:]}" if m_id.startswith("M_") else f"R_EX_{m_id}"
+            rxn = CBReaction(r_id, reversible=True, stoichiometry={m_id: -1},
                              reaction_type=ReactionType.EXCHANGE)
             comm_model.add_reaction(rxn)
 
