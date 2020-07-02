@@ -1,7 +1,187 @@
 from ..solvers import solver_instance
+from ..solvers.solution import Status
+from ..core.transformation import gpr_transform
 from .simulation import FBA, pFBA
-from numpy import percentile
 from math import inf
+from numpy import percentile
+
+
+def marge(model, expr_a=None, expr_b=None, rel_expr=None, transformed=False, constraints_a=None, constraints_b=None,
+         growth_frac_a=1.0, growth_frac_b=1.0, step2_relax=0.1, get_ranges=False, gene_prefix='G_', pseudo_genes=None):
+    """ Metabolic Analysis with Relative Gene Expression (MARGE)
+
+    Args:
+        model (CBModel): organism model
+        expr_a (dict): gene expression for condition A (optional)
+        expr_b (dict): gene expression for condition B (optional)
+        rel_expr (dict): relative gene expression (B / A) (optional)
+        transformed (bool): True if the model is already in extended GPR format (default: False)
+        constraints_a (dict): additional constraints to use for condition A (optional)
+        constraints_b (dict): additional constraints to use for condition B (optional)
+        growth_frac_a (float): minimum growth rate in condition A (default: 1.0)
+        growth_frac_b (float): minimum growth rate in condition B (default: 1.0)
+        step2_relax (float): relaxation from main objective during second step (default: 0.1)
+        get_ranges (bool): return flux ranges instead of single flux distributions (default: False)
+        gene_prefix (str): prefix used in gene identifiers (default: 'G_')
+        pseudo_genes (list): pseudo-genes in model to ignore (e.g: 'spontaneous') (optional)
+
+    Returns:
+        dict: fluxes (or flux ranges) in conditions A and B
+    """
+
+    if rel_expr is None:
+        if expr_a is None or expr_b is None:
+            raise RuntimeError("Please provide either relative or absolute expression values.")
+
+        if min(expr_a.values()) < 0 or min(expr_b.values()) < 0:
+            raise RuntimeError("Expression values must be non-negative.")
+
+        common_genes = set(expr_a) & set(expr_b) & set(model.genes)
+        if len(common_genes) == 0:
+            raise RuntimeError("Gene identifiers do not match any genes in the model.")
+
+        expr_a = {x: expr_a[x] for x in common_genes}
+        expr_b = {x: expr_b[x] for x in common_genes}
+
+    else:
+        if expr_a is not None or expr_b is not None:
+            raise RuntimeError("Please provide either relative or absolute expression values.")
+
+        if min(rel_expr.values()) <= 0:
+            raise RuntimeError("Relative expression values must be positive.")
+
+        common_genes = set(rel_expr) & set(model.genes)
+        if len(common_genes) == 0:
+            raise RuntimeError("Gene identifiers do not match any genes in the model.")
+
+        # converting relative to absolute gene expression such that geometric mean(a, b) = 1
+        expr_a = {x: rel_expr[x] ** -0.5 for x in common_genes}
+        expr_b = {x: rel_expr[x] ** 0.5 for x in common_genes}
+
+    if not transformed:
+        model = gpr_transform(model, inplace=False, add_proteome=True,
+                              gene_prefix=gene_prefix, pseudo_genes=pseudo_genes)
+
+    if constraints_a is None:
+        constraints_a = {}
+    else:
+        constraints_a = model.convert_constraints(constraints_a)
+
+    if constraints_b is None:
+        constraints_b = {}
+    else:
+        constraints_b = model.convert_constraints(constraints_b)
+
+    pre_solver = solver_instance(model)
+
+    sol_a = pFBA(model, solver=pre_solver, reactions=["proteome_synth"], constraints=constraints_a)
+    if sol_a.status != Status.OPTIMAL:
+        raise RuntimeError('Failed to solve reference model for condition A.')
+
+    sol_b = pFBA(model, solver=pre_solver, reactions=["proteome_synth"], constraints=constraints_b)
+    if sol_b.status != Status.OPTIMAL:
+        raise RuntimeError('Failed to solve reference model for condition B.')
+
+    max_growth_a = sol_a.values[model.biomass_reaction]
+    constraints_a[model.biomass_reaction] = (max_growth_a * growth_frac_a, inf)
+
+    max_growth_b = sol_b.values[model.biomass_reaction]
+    constraints_b[model.biomass_reaction] = (max_growth_b * growth_frac_b, inf)
+
+    proteome_a = sol_a.values["proteome_synth"]
+    proteome_b = sol_b.values["proteome_synth"]
+
+    solver = solver_instance()
+
+    for r_id, reaction in model.reactions.items():
+        lb_a, ub_a = constraints_a.get(r_id, (reaction.lb, reaction.ub))
+        solver.add_variable(r_id + '_a', lb_a, ub_a, update=False)
+
+        lb_b, ub_b = constraints_b.get(r_id, (reaction.lb, reaction.ub))
+        solver.add_variable(r_id + '_b', lb_b, ub_b, update=False)
+
+    for g_id in common_genes:
+        solver.add_variable(g_id + '_+', 0, inf, update=False)
+        solver.add_variable(g_id + '_-', 0, inf, update=False)
+
+    solver.update()
+
+    table = model.metabolite_reaction_lookup()
+
+    for m_id in model.metabolites:
+        stoich_a = {r_id + '_a': val for r_id, val in table[m_id].items()}
+        solver.add_constraint(m_id + '_a', stoich_a, update=False)
+
+        stoich_b = {r_id + '_b': val for r_id, val in table[m_id].items()}
+        solver.add_constraint(m_id + '_b', stoich_b, update=False)
+
+    objective = {}
+
+    for g_id in common_genes:
+        g_id_p, g_id_m = g_id + '_+', g_id + '_-'
+        g_c_p, g_c_m = g_id + '_c+', g_id + '_c-'
+
+        objective[g_id_p] = 1
+        objective[g_id_m] = 1
+
+        u_id_a = 'u_' + g_id[len(gene_prefix):] + '_a'
+        u_id_b = 'u_' + g_id[len(gene_prefix):] + '_b'
+
+        solver.add_constraint(g_c_p, {u_id_b: expr_a[g_id], u_id_a: -expr_b[g_id], g_id_m: 1}, '>', 0, update=False)
+        solver.add_constraint(g_c_m, {u_id_b: expr_a[g_id], u_id_a: -expr_b[g_id], g_id_p: -1}, '<', 0, update=False)
+
+    solver.add_constraint("proteome_a", {"proteome_synth_a": 1}, '<', proteome_a, update=False)
+    solver.add_constraint("proteome_b", {"proteome_synth_b": 1}, '<', proteome_b, update=False)
+
+    solver.update()
+
+    sol = solver.solve(objective, minimize=True)
+
+    if sol.status != Status.OPTIMAL:
+        raise RuntimeError("Failed to solve first problem.")
+
+    obj1_max = sol.fobj * (1 + step2_relax)
+    solver.add_constraint("obj1", objective, '<', obj1_max, update=True)
+
+    if get_ranges:
+
+        ranges_a = {r_id: [-inf, inf] for r_id in model.reactions}
+        ranges_b = {r_id: [-inf, inf] for r_id in model.reactions}
+
+        for r_id in model.reactions:
+            tmp = solver.solve({r_id + '_a': 1}, minimize=True, get_values=False)
+            if tmp.status == Status.OPTIMAL:
+                ranges_a[r_id][0] = tmp.fobj
+
+            tmp = solver.solve({r_id + '_b': 1}, minimize=True, get_values=False)
+            if tmp.status == Status.OPTIMAL:
+                ranges_b[r_id][0] = tmp.fobj
+
+        for r_id in model.reactions:
+            tmp = solver.solve({r_id + '_a': 1}, minimize=False, get_values=False)
+            if tmp.status == Status.OPTIMAL:
+                ranges_a[r_id][1] = tmp.fobj
+
+            tmp = solver.solve({r_id + '_b': 1}, minimize=False, get_values=False)
+            if tmp.status == Status.OPTIMAL:
+                ranges_b[r_id][1] = tmp.fobj
+
+        return ranges_a, ranges_b
+
+    else:
+        objective2 = {"proteome_synth_a": 1, "proteome_synth_b": 1}
+        sol2 = solver.solve(objective2, minimize=True)
+
+        if sol.status != Status.OPTIMAL:
+            raise RuntimeError("Failed to solve second problem.")
+
+        fluxes_a = {r_id: sol2.values[r_id + "_a"] for r_id in model.reactions}
+        fluxes_a = model.convert_fluxes(fluxes_a)
+
+        fluxes_b = {r_id: sol2.values[r_id + "_b"] for r_id in model.reactions}
+        fluxes_b = model.convert_fluxes(fluxes_b)
+
+        return fluxes_a, fluxes_b
 
 
 def gene2rxn(gpr, gene_exp, and_func=min, or_func=sum):

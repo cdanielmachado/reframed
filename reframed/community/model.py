@@ -1,5 +1,5 @@
 from ..core.model import AttrOrderedDict, ReactionType, Compartment, Metabolite
-from ..core.cbmodel import CBModel, CBReaction
+from ..core.cbmodel import CBModel, CBReaction, Gene, Protein, GPRAssociation
 from math import inf
 from warnings import warn
 
@@ -90,6 +90,14 @@ class Community(object):
                     comm_model.add_metabolite(new_met)
                     ext_mets.append(new_met.id)
 
+            # add genes
+
+            for g_id, gene in model.genes.items():
+                new_id = rename(g_id)
+                new_gene = Gene(new_id, gene.name)
+                new_gene.metadata = gene.metadata.copy()
+                comm_model.add_gene(new_gene)
+
             # add internal reactions
 
             for r_id, rxn in model.reactions.items():
@@ -106,6 +114,18 @@ class Community(object):
                 if r_id == model.biomass_reaction:
                     new_stoichiometry[biomass_id] = 1
 
+                if rxn.gpr is None:
+                    new_gpr = None
+                else:
+                    new_gpr = GPRAssociation()
+                    new_gpr.metadata = rxn.gpr.metadata.copy()
+
+                    for protein in rxn.gpr.proteins:
+                        new_protein = Protein()
+                        new_protein.genes = [rename(g_id) for g_id in protein.genes]
+                        new_protein.metadata = protein.metadata.copy()
+                        new_gpr.proteins.append(new_protein)
+
                 new_rxn = CBReaction(
                     new_id,
                     name=rxn.name,
@@ -114,6 +134,7 @@ class Community(object):
                     reaction_type=rxn.reaction_type,
                     lb=rxn.lb,
                     ub=rxn.ub,
+                    gpr_association=new_gpr
                 )
 
                 comm_model.add_reaction(new_rxn)
