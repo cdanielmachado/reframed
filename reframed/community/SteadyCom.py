@@ -25,7 +25,7 @@ def SteadyCom(community, constraints=None, solver=None):
 
     sol = binary_search(solver, objective, minimize=False, constraints=constraints)
 
-    solution = CommunitySolution(community, sol)
+    solution = CommunitySolution(community, sol.values)
     solution.solver = solver
 
     return solution

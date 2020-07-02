@@ -58,7 +58,7 @@ def SteadierCom(community, objective1=None, objective2=None, growth=None, abunda
 
         if sol.status == Status.OPTIMAL:
             if i == len(objectives) - 1:
-                solution = CommunitySolution(community, sol)
+                solution = CommunitySolution(community, sol.values)
                 solution.solver = solver
             else:
                 if minimize:
@@ -113,7 +113,7 @@ def SteadierComSample(community, n=10, growth=None, obj_frac=1, proteome=False, 
     for _ in range(n):
         objective = {f"x_{org_id}": lognormvariate(0, 1) for org_id in community.organisms}
         sol = solver.solve(objective, minimize=False, constraints=constraints)
-        sols.append(CommunitySolution(community, sol))
+        sols.append(CommunitySolution(community, sol.values))
 
     return sols
 

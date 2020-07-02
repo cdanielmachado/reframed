@@ -102,7 +102,7 @@ def simulate(community, objective=None, growth=0.1, abundance=None, allocation=F
     sol = solver.solve(objective, minimize=False, constraints=constraints)
 
     if sol.status == Status.OPTIMAL:
-        sol = CommunitySolution(community, sol)
+        sol = CommunitySolution(community, sol.values)
 
     return sol
 
@@ -137,7 +137,7 @@ def sample(community, n=100, growth=0.1, abundance=None, allocation=False, const
         sol = solver.solve(objective, minimize=True, constraints=constraints)
 
         if sol.status == Status.OPTIMAL:
-            sol = CommunitySolution(community, sol)
+            sol = CommunitySolution(community, sol.values)
             sols.append(sol)
 
     return sols

@@ -4,9 +4,10 @@ from ..core.transformation import gpr_transform
 from .simulation import FBA, pFBA
 from math import inf
 from numpy import percentile
+from collections import Iterable
 
 
-def marge(model, expr_a=None, expr_b=None, rel_expr=None, transformed=False, constraints_a=None, constraints_b=None,
+def marge(model, expr_a=None, expr_b=None, rel_expr=None, constraints_a=None, constraints_b=None,
          growth_frac_a=1.0, growth_frac_b=1.0, step2_relax=0.1, get_ranges=False, gene_prefix='G_', pseudo_genes=None):
     """ Metabolic Analysis with Relative Gene Expression (MARGE)
 
@@ -15,7 +16,6 @@ def marge(model, expr_a=None, expr_b=None, rel_expr=None, transformed=False, con
         expr_a (dict): gene expression for condition A (optional)
         expr_b (dict): gene expression for condition B (optional)
         rel_expr (dict): relative gene expression (B / A) (optional)
-        transformed (bool): True if the model is already in extended GPR format (default: False)
         constraints_a (dict): additional constraints to use for condition A (optional)
         constraints_b (dict): additional constraints to use for condition B (optional)
         growth_frac_a (float): minimum growth rate in condition A (default: 1.0)
@@ -58,8 +58,8 @@ def marge(model, expr_a=None, expr_b=None, rel_expr=None, transformed=False, con
         expr_a = {x: rel_expr[x] ** -0.5 for x in common_genes}
         expr_b = {x: rel_expr[x] ** 0.5 for x in common_genes}
 
-    if not transformed:
-        model = gpr_transform(model, inplace=False, add_proteome=True,
+    model0 = model
+    model = gpr_transform(model0, inplace=False, add_proteome=True,
                               gene_prefix=gene_prefix, pseudo_genes=pseudo_genes)
 
     if constraints_a is None:
@@ -143,32 +143,8 @@ def marge(model, expr_a=None, expr_b=None, rel_expr=None, transformed=False, con
     obj1_max = sol.fobj * (1 + step2_relax)
     solver.add_constraint("obj1", objective, '<', obj1_max, update=True)
 
-    if get_ranges:
+    if not get_ranges:
 
-        ranges_a = {r_id: [-inf, inf] for r_id in model.reactions}
-        ranges_b = {r_id: [-inf, inf] for r_id in model.reactions}
-
-        for r_id in model.reactions:
-            tmp = solver.solve({r_id + '_a': 1}, minimize=True, get_values=False)
-            if tmp.status == Status.OPTIMAL:
-                ranges_a[r_id][0] = tmp.fobj
-
-            tmp = solver.solve({r_id + '_b': 1}, minimize=True, get_values=False)
-            if tmp.status == Status.OPTIMAL:
-                ranges_b[r_id][0] = tmp.fobj
-
-        for r_id in model.reactions:
-            tmp = solver.solve({r_id + '_a': 1}, minimize=False, get_values=False)
-            if tmp.status == Status.OPTIMAL:
-                ranges_a[r_id][1] = tmp.fobj
-
-            tmp = solver.solve({r_id + '_b': 1}, minimize=False, get_values=False)
-            if tmp.status == Status.OPTIMAL:
-                ranges_b[r_id][1] = tmp.fobj
-
-        return ranges_a, ranges_b
-
-    else:
         objective2 = {"proteome_synth_a": 1, "proteome_synth_b": 1}
         sol2 = solver.solve(objective2, minimize=True)
 
@@ -182,6 +158,39 @@ def marge(model, expr_a=None, expr_b=None, rel_expr=None, transformed=False, con
         fluxes_b = model.convert_fluxes(fluxes_b)
 
         return fluxes_a, fluxes_b
+
+    else:
+        if isinstance(get_ranges, Iterable):
+            reactions = list(get_ranges)
+        else:
+            reactions = model0.reactions
+
+        ranges_a = {r_id: [-inf, inf] for r_id in reactions}
+        ranges_b = {r_id: [-inf, inf] for r_id in reactions}
+
+        for r_id in reactions:
+            obj_a = {x + '_a': val for x, val in model.convert_id_to_expr(r_id).items()}
+            tmp = solver.solve(obj_a, minimize=True, get_values=False)
+            if tmp.status == Status.OPTIMAL:
+                ranges_a[r_id][0] = tmp.fobj
+
+            obj_b = {x + '_b': val for x, val in model.convert_id_to_expr(r_id).items()}
+            tmp = solver.solve(obj_b, minimize=True, get_values=False)
+            if tmp.status == Status.OPTIMAL:
+                ranges_b[r_id][0] = tmp.fobj
+
+        for r_id in reactions:
+            obj_a = {x + '_a': val for x, val in model.convert_id_to_expr(r_id).items()}
+            tmp = solver.solve(obj_a, minimize=False, get_values=False)
+            if tmp.status == Status.OPTIMAL:
+                ranges_a[r_id][1] = tmp.fobj
+
+            obj_b = {x + '_b': val for x, val in model.convert_id_to_expr(r_id).items()}
+            tmp = solver.solve(obj_b, minimize=False, get_values=False)
+            if tmp.status == Status.OPTIMAL:
+                ranges_b[r_id][1] = tmp.fobj
+
+        return ranges_a, ranges_b
 
 
 def gene2rxn(gpr, gene_exp, and_func=min, or_func=sum):

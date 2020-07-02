@@ -4,16 +4,16 @@ from ..core.elements import molecular_weight
 
 class CommunitySolution(object):
 
-    def __init__(self, community, solution):
+    def __init__(self, community, values):
         self.community = community
-        self.solution = solution
+        self.values = values
         self.growth = None
         self.abundance = None
         self.exchange = None
         self.internal = None
         self.normalized = None
         self._exchange_map = None
-        self.parse_solution()
+        self.parse_values()
 
     def __str__(self):
         growth = f"Community growth: {self.growth}\n"
@@ -30,19 +30,18 @@ class CommunitySolution(object):
 
         return self._exchange_map
 
-    def parse_solution(self):
+    def parse_values(self):
         model = self.community.merged_model
-        solution = self.solution
         reaction_map = self.community.reaction_map
 
-        self.growth = solution.values[model.biomass_reaction]
+        self.growth = self.values[model.biomass_reaction]
 
         self.abundance = {}
         for org_id, organism in self.community.organisms.items():
             growth_i = self.community.reaction_map[(org_id, organism.biomass_reaction)]
-            self.abundance[org_id] = solution.values[growth_i] / self.growth
+            self.abundance[org_id] = self.values[growth_i] / self.growth
 
-        self.exchange = {r_id: solution.values[r_id]
+        self.exchange = {r_id: self.values[r_id]
                          for r_id in model.get_exchange_reactions()}
 
         self.internal = {}
@@ -52,7 +51,7 @@ class CommunitySolution(object):
 
             abundance = self.abundance[org_id]
 
-            fluxes = {r_id: solution.values[reaction_map[(org_id, r_id)]]
+            fluxes = {r_id: self.values[reaction_map[(org_id, r_id)]]
                       for r_id in organism.reactions
                       if (org_id, r_id) in reaction_map}
 
@@ -80,7 +79,7 @@ class CommunitySolution(object):
                     if (org_id, r_id) not in reaction_map:
                         continue
 
-                    flux = self.solution.values[reaction_map[(org_id, r_id)]]
+                    flux = self.values[reaction_map[(org_id, r_id)]]
 
                     if flux != 0:
                         coeff = organism.reactions[r_id].stoichiometry[m_id]
@@ -151,7 +150,7 @@ class CommunitySolution(object):
 
     def print_external_balance(self, m_id, sort=False, percentage=False, equations=False, abstol=1e-9):
 
-        print_balance(self.solution.values, m_id, self.community.merged_model, sort=sort, percentage=percentage, equations=equations,
+        print_balance(self.values, m_id, self.community.merged_model, sort=sort, percentage=percentage, equations=equations,
                       abstol=abstol)
 
     def print_exchanges(self, m_id=None, abstol=1e-9):
@@ -172,7 +171,7 @@ class CommunitySolution(object):
 
             for r_id in ext_rxns:
 
-                flux = self.solution.values[r_id]
+                flux = self.values[r_id]
                 coeff = model.reactions[r_id].stoichiometry[m_id]
                 rate = coeff*flux
 
