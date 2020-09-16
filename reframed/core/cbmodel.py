@@ -346,8 +346,8 @@ class CBModel(Model):
 
         Arguments:
             r_id (str): reaction id
-            lb (float): lower bound (use None to represent negative infinity)
-            ub (float): upper bound (use None to represent positive infinity)
+            lb (float): lower bound
+            ub (float): upper bound
         """
         if r_id not in self.reactions:
             raise KeyError(f"Reaction {r_id} not found")
