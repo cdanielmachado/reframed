@@ -14,7 +14,7 @@ def infinity_fix(val):
     elif val == -inf:
         return -infinity
     else:
-        return val
+        return float(val)
 
 
 class CplexSolver(Solver):
@@ -191,6 +191,12 @@ class CplexSolver(Solver):
                 self.constr_ids.remove(constr_id)
 
         self.problem.linear_constraints.delete(found)
+
+    def set_bounds(self, bounds_dict):
+        lower_bounds = [(var_id, infinity_fix(lb)) for var_id, (lb, _) in bounds_dict.items()]
+        upper_bounds = [(var_id, infinity_fix(ub)) for var_id, (_, ub) in bounds_dict.items()]
+        self.problem.variables.set_lower_bounds(lower_bounds)
+        self.problem.variables.set_upper_bounds(upper_bounds)
 
     def update(self):
         """ Update internal structure. Used for efficient lazy updating. """

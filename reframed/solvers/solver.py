@@ -110,6 +110,14 @@ class Solver(object):
         """
         return self.constr_ids
 
+    def set_bounds(self, bounds_dict):
+        """ Set lower and upper bounds from tuple dictionary
+        Arguments:
+            bounds_dict (dict): lower and upper bounds
+        """
+
+        raise Exception('Not implemented for this solver.')
+
     def update(self):
         """ Update internal structure. Used for efficient lazy updating. """
         pass

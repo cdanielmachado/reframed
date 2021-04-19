@@ -144,6 +144,12 @@ class GurobiSolver(Solver):
                 self.problem.remove(self.problem.getConstrByName(constr_id))
                 self.constr_ids.remove(constr_id)
 
+    def set_bounds(self, bounds_dict):
+        for var_id, bounds in bounds_dict.items():
+            lpvar = self.problem.getVarByName(var_id)
+            lpvar.lb = bounds[0] if bounds[0] is not None else GRB.INFINITY
+            lpvar.ub = bounds[1] if bounds[1] is not None else GRB.INFINITY
+
     def update(self):
         """ Update internal structure. Used for efficient lazy updating. """
         self.problem.update()
