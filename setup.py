@@ -10,7 +10,7 @@ with open('README.rst') as readme_file:
 
 requirements = ['numpy', 'scipy', 'sympy', 'python-libsbml']
 
-setup_requirements = [ ]
+setup_requirements = []
 
 test_requirements = requirements + ['cplex']
 
@@ -21,6 +21,8 @@ setup(
     classifiers=[
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
     ],
     description="metabolic modeling package",
     install_requires=requirements,
@@ -34,6 +36,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/cdanielmachado/reframed',
-    version='1.2.0',
+    version='1.2.1',
     zip_safe=False,
 )
