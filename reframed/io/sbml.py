@@ -460,8 +460,10 @@ def load_fbc2_objective(sbml_model, model):
 def load_fbc2_gpr(sbml_model, model):
     fbcmodel = sbml_model.getPlugin('fbc')
 
-    for gene in fbcmodel.getListOfGeneProducts():
-        model.add_gene(Gene(gene.getId(), gene.getName()))
+    for sbml_gene in fbcmodel.getListOfGeneProducts():
+        gene = Gene(sbml_gene.getId(), sbml_gene.getName())
+        extract_metadata(sbml_gene, gene)
+        model.add_gene(gene)
 
     for reaction in sbml_model.getListOfReactions():
         fbcrxn = reaction.getPlugin('fbc')
@@ -513,10 +515,18 @@ def parse_fbc_association(gpr_assoc, reaction_id):
 
 
 def extract_metadata(sbml_elem, elem):
-    notes = sbml_elem.getNotes()
 
+    sboterm = sbml_elem.getSBOTermID()
+    if sboterm:
+        elem.metadata['SBOTerm'] = sboterm
+
+    notes = sbml_elem.getNotes()
     if notes:
         recursive_node_parser(notes, elem.metadata)
+
+    annotation = sbml_elem.getAnnotationString()
+    if annotation:
+        elem.metadata['XMLAnnotation'] = annotation
 
 
 def recursive_node_parser(node, cache):
@@ -748,6 +758,7 @@ def save_fbc_gprs(model, sbml_model):
         gene_prod.setId(gene.id)
         gene_prod.setName(gene.name)
         gene_prod.setLabel(gene.name)
+        save_metadata(gene, gene_prod)
 
     for r_id, reaction in model.reactions.items():
         if reaction.gpr:
@@ -769,13 +780,23 @@ def save_fbc_gprs(model, sbml_model):
 
 
 def save_metadata(elem, sbml_elem):
+    sbml_elem.setMetaId(elem.id)
+
     if elem.metadata:
         try:
+            if 'XMLAnnotation' in elem.metadata:
+                sbml_elem.setAnnotation(elem.metadata['XMLAnnotation'])
+
+            if 'SBOTerm' in elem.metadata:
+                sbml_elem.setSBOTerm(elem.metadata['SBOTerm'])
+
             notes = [f'<p>{key}: {escape(value)}</p>'
-                     for key, value in elem.metadata.items()]
+                     for key, value in elem.metadata.items()
+                     if key != 'XMLAnnotation']
             note_string = '<html>' + ''.join(notes) + '</html>'
             note_xml = sb.XMLNode.convertStringToXMLNode(note_string)
             note_xml.getNamespaces().add('http://www.w3.org/1999/xhtml')
             sbml_elem.setNotes(note_xml)
+
         except AttributeError:
             warn(f"Unable to save metadata for object {sbml_elem.getId()}")
