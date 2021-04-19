@@ -37,6 +37,18 @@ def parse_formula(formula):
             for atom, coeff in re.findall(ELEMENT_RE, formula)}
 
 
+def unparse_formula(elem_dict):
+    formula = ''
+    for elem, coeff in sorted(elem_dict.items()):
+        if coeff == 0:
+            continue
+        elif coeff == 1:
+            formula += elem
+        else:
+            formula += elem + str(int(coeff))
+    return formula
+
+
 def molecular_weight(formula, element=None):
 
     elements = parse_formula(formula)
