@@ -469,13 +469,13 @@ def load_fbc2_gpr(sbml_model, model):
         fbcrxn = reaction.getPlugin('fbc')
         gpr_assoc = fbcrxn.getGeneProductAssociation()
         if gpr_assoc:
-            gpr = parse_fbc_association(gpr_assoc.getAssociation(), reaction.getId())
+            gpr = parse_fbc_association(gpr_assoc.getAssociation())
             model.set_gpr_association(reaction.getId(), gpr, add_genes=False)
         else:
             model.set_gpr_association(reaction.getId(), None)
 
 
-def parse_fbc_association(gpr_assoc, r_id):
+def parse_fbc_association(gpr_assoc):
     gpr = GPRAssociation()
     parsing_error = False
 
@@ -510,7 +510,6 @@ def parse_fbc_association(gpr_assoc, r_id):
 
     if parsing_error:
         gpr_str = convert_to_dnf(gpr_assoc)
-        print(r_id, gpr_str, sep='\t')
         gpr = parse_gpr_rule(gpr_str)
 
     return gpr
