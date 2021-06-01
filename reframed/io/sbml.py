@@ -475,7 +475,7 @@ def load_fbc2_gpr(sbml_model, model):
             model.set_gpr_association(reaction.getId(), None)
 
 
-def parse_fbc_association(gpr_assoc, reaction_id):
+def parse_fbc_association(gpr_assoc, r_id):
     gpr = GPRAssociation()
     parsing_error = False
 
@@ -509,9 +509,25 @@ def parse_fbc_association(gpr_assoc, reaction_id):
         parsing_error = True
 
     if parsing_error:
-        warn(f"Gene association for reaction {reaction_id} is not DNF")
-    else:
-        return gpr
+        gpr_str = convert_to_dnf(gpr_assoc)
+        print(r_id, gpr_str, sep='\t')
+        gpr = parse_gpr_rule(gpr_str)
+
+    return gpr
+
+
+def convert_to_dnf(gpr_assoc):
+
+    if gpr_assoc.isFbcOr():
+        tokens = [convert_to_dnf(x) for x in gpr_assoc.getListOfAssociations()]
+        gpr_str = '(' + ' or '.join(tokens) + ')'
+    elif gpr_assoc.isFbcAnd():
+        tokens = [convert_to_dnf(x) for x in gpr_assoc.getListOfAssociations()]
+        gpr_str = '(' + ' and '.join(tokens) + ')'
+    elif gpr_assoc.isGeneProductRef():
+        gpr_str = gpr_assoc.getGeneProduct()
+
+    return gpr_str
 
 
 def extract_metadata(sbml_elem, elem):
