@@ -222,8 +222,9 @@ class CBModel(Model):
        """
 
         if gene.id in self.genes and not replace:
-            raise RuntimeError(f"Gene {gene.id} already exists.")
-        self.genes[gene.id] = gene
+            warn(f"Gene {gene.id} already exists, ignoring.")
+        else:
+            self.genes[gene.id] = gene
 
     def add_reaction_from_str(self, reaction_str, compartment=None):
         """ Parse a reaction from a string and add it to the model.
@@ -350,7 +351,8 @@ class CBModel(Model):
             ub (float): upper bound
         """
         if r_id not in self.reactions:
-            raise KeyError(f"Reaction {r_id} not found")
+            warn(f"Reaction {r_id} not found")
+            return
 
         if lb is not None:
             self.reactions[r_id].lb = lb
