@@ -3,7 +3,7 @@ from ..solvers.solver import VarType
 from ..solvers.solution import Status
 from ..core.model import ReactionType
 from warnings import warn
-from collections import Iterable
+from collections.abc import Iterable
 from math import inf
 
 
