@@ -4,7 +4,7 @@ from ..core.transformation import gpr_transform
 from .simulation import FBA, pFBA
 from math import inf
 from numpy import percentile
-from collections import Iterable
+from collections.abc import Iterable
 
 
 def marge(model, expr_a=None, expr_b=None, rel_expr=None, constraints_a=None, constraints_b=None,

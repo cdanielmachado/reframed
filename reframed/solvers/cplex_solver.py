@@ -1,5 +1,5 @@
 
-from collections import Iterable
+from collections.abc import Iterable
 from .solver import Solver, VarType, Parameter, default_parameters
 from .solution import Solution, Status
 from cplex import Cplex, infinity, SparsePair
