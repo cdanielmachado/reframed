@@ -1,4 +1,4 @@
-from collections import Iterable
+from collections.abc import Iterable
 from .solver import Solver, VarType, Parameter, default_parameters
 from .solution import Solution, Status
 from gurobipy import Model as GurobiModel, GRB, quicksum
