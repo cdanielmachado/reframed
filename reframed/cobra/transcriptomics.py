@@ -4,7 +4,6 @@ from ..core.transformation import gpr_transform
 from .simulation import FBA, pFBA
 from math import inf
 from numpy import percentile
-from collections import Iterable
 
 
 def marge(model, expr_a=None, expr_b=None, rel_expr=None, constraints_a=None, constraints_b=None,
@@ -160,10 +159,7 @@ def marge(model, expr_a=None, expr_b=None, rel_expr=None, constraints_a=None, co
         return fluxes_a, fluxes_b
 
     else:
-        if isinstance(get_ranges, Iterable):
-            reactions = list(get_ranges)
-        else:
-            reactions = model0.reactions
+        reactions = model0.reactions
 
         ranges_a = {r_id: [-inf, inf] for r_id in reactions}
         ranges_b = {r_id: [-inf, inf] for r_id in reactions}

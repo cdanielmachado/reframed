@@ -3,7 +3,6 @@ from ..solvers.solver import VarType
 from ..solvers.solution import Status
 from ..core.model import ReactionType
 from warnings import warn
-from collections import Iterable
 from math import inf
 
 
@@ -377,7 +376,7 @@ def ROOM(model, reference=None, constraints=None, wt_constraints=None, reactions
 
         for r_id in reactions:
             y_i = 'y_' + r_id
-            if isinstance(reference[r_id], Iterable):
+            if isinstance(reference[r_id], tuple) or isinstance(reference[r_id], list):
                 w_i_min = reference[r_id][0] if reference[r_id][0] != -inf else -1000
                 w_i_max = reference[r_id][1] if reference[r_id][1] != inf else 1000
             else:

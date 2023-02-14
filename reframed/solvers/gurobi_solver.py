@@ -1,4 +1,3 @@
-from collections import Iterable
 from .solver import Solver, VarType, Parameter, default_parameters
 from .solution import Solution, Status
 from gurobipy import Model as GurobiModel, GRB, quicksum
@@ -252,8 +251,7 @@ class GurobiSolver(Solver):
                 values, s_prices, r_costs = None, None, None
 
                 if get_values:
-                    if isinstance(get_values, Iterable):
-                        get_values = list(get_values)
+                    if isinstance(get_values, list):
                         values = {r_id: problem.getVarByName(r_id).X for r_id in get_values}
                     else:
                         values = {r_id: problem.getVarByName(r_id).X for r_id in self.var_ids}
@@ -311,8 +309,7 @@ class GurobiSolver(Solver):
             self.problem.setParam(GRB.param.SolutionNumber, i)
             obj = self.problem.PoolObjVal
             if get_values:
-                if isinstance(get_values, Iterable):
-                    get_values = list(get_values)
+                if isinstance(get_values, list):
                     values = {r_id: self.problem.getVarByName(r_id).Xn for r_id in get_values}
                 else:
                     values = {r_id: self.problem.getVarByName(r_id).Xn for r_id in self.var_ids}

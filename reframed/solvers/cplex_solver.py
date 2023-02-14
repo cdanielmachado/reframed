@@ -1,5 +1,4 @@
 
-from collections import Iterable
 from .solver import Solver, VarType, Parameter, default_parameters
 from .solution import Solution, Status
 from cplex import Cplex, infinity, SparsePair
@@ -335,8 +334,7 @@ class CplexSolver(Solver):
                 values, s_prices, r_costs = None, None, None
 
                 if get_values:
-                    if isinstance(get_values, Iterable):
-                        get_values = list(get_values)
+                    if isinstance(get_values, list):
                         values = dict(zip(get_values, problem.solution.get_values(get_values)))
                     else:
                         values = dict(zip(self.var_ids, problem.solution.get_values()))
@@ -435,8 +433,7 @@ class CplexSolver(Solver):
             obj = pool.get_objective_value(i)
 
             if get_values:
-                if isinstance(get_values, Iterable):
-                    get_values = list(get_values)
+                if isinstance(get_values, list):
                     values = dict(zip(get_values, pool.get_values(i, get_values)))
                 else:
                     values = dict(zip(self.var_ids, pool.get_values(i)))

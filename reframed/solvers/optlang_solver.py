@@ -4,7 +4,6 @@ from .solver import Solver, VarType, Parameter, default_parameters
 from .solution import Solution, Status
 from math import inf
 from warnings import warn
-from collections import Iterable
 
 
 status_mapping = {
@@ -242,7 +241,7 @@ class OptLangSolver(Solver):
             if get_values:
                 values = dict(problem.primal_values)
 
-                if isinstance(get_values, Iterable):
+                if isinstance(get_values, list):
                     values = {x: values[x] for x in get_values}
 
             if shadow_prices:
