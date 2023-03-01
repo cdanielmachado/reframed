@@ -25,7 +25,7 @@ class OptLangSolver(Solver):
         self.parameter_mapping = {
             Parameter.TIME_LIMIT: self.problem.configuration.timeout,
             Parameter.FEASIBILITY_TOL: self.problem.configuration.tolerances.feasibility,
-            Parameter.OPTIMALITY_TOL: self.problem.configuration.tolerances.optimality,
+            Parameter.OPTIMALITY_TOL: 1e-9,
             Parameter.INT_FEASIBILITY_TOL: self.problem.configuration.tolerances.integrality,
         }
 
@@ -35,7 +35,7 @@ class OptLangSolver(Solver):
         if model:
             self.build_problem(model)
 
-    def add_variable(self, var_id, lb=-inf, ub=inf, vartype=VarType.CONTINUOUS, update=True):
+    def add_variable(self, var_id, lb=-inf, ub=inf, vartype='continuous', update=True):
         """ Add a variable to the current problem.
 
         Arguments:
@@ -50,9 +50,9 @@ class OptLangSolver(Solver):
             var = self.problem.variables[var_id]
             var.lb = lb
             var.ub = ub
-            var.type = vartype.value
+            var.type = vartype
         else:
-            var = Variable(var_id, lb=lb, ub=ub, type=vartype.value)
+            var = Variable(var_id, lb=lb, ub=ub, type=vartype)
             self.problem.add(var)
             self.var_ids.append(var_id)
 
