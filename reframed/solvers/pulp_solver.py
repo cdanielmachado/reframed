@@ -1,43 +1,41 @@
-from enum import Enum
 from math import inf
+from .solver import Solver, VarType, Parameter, default_parameters
+from .solution import Solution, Status
+from pulp import LpProblem, LpVariable, LpConstraint, LpAffineExpression, lpSum, value
+from pulp.constants import LpBinary, LpContinuous, LpInteger, LpConstraintEQ, LpConstraintGE, LpConstraintLE, LpMaximize, LpMinimize, LpStatus
 
 
-class VarType(Enum):
-    """ Enumeration of possible variable types. """
-    BINARY = 'binary'
-    INTEGER = 'integer'
-    CONTINUOUS = 'continuous'
-
-
-class Parameter(Enum):
-    """ Enumeration of parameters common to all solvers. """
-    TIME_LIMIT = 0
-    FEASIBILITY_TOL = 1
-    INT_FEASIBILITY_TOL = 2
-    OPTIMALITY_TOL = 3
-    MIP_REL_GAP = 4
-    MIP_ABS_GAP = 5
-    POOL_SIZE = 6
-    POOL_GAP = 7
-
-
-default_parameters = {
-    Parameter.FEASIBILITY_TOL: 1e-9,
-    Parameter.OPTIMALITY_TOL: 1e-9,
+status_mapping = {
+    LpStatus.LpSolutionOptimal: Status.OPTIMAL,
+    LpStatus.LpSolutionStatusInfeasible: Status.INFEASIBLE,
+    LpStatus.LpSolutionNoSolutionFound: Status.INF_OR_UNB,
+    LpStatus.LpSolutionStatusUnbounded: Status.UNBOUNDED,
+    LpStatus.LpSolutionIntegerFeasible: Status.SUBOPTIMAL
 }
 
 
-class Solver(object):
-    """ Abstract class representing a generic solver.
+vartype_mapping = {
+    VarType.BINARY: LpBinary,
+    VarType.INTEGER: LpInteger,
+    VarType.CONTINUOUS: LpContinuous
+}
 
-    All solver interfaces should implement the methods defined in this class.
-    """
+
+class PuLPSolver(Solver):
+    """ Implements the solver interface using PuLP. """
 
     def __init__(self, model=None):
-        self.problem = None
-        self.var_ids = []
-        self.constr_ids = []
-        self.model = model
+        Solver.__init__(self)
+
+        self.problem = LpProblem()
+        self.variables = {}
+        self.constraints = {}
+
+#        self.set_parameters(default_parameters)
+#        self.set_logging(False)
+
+        if model:
+            self.build_problem(model)
 
     def add_variable(self, var_id, lb=-inf, ub=inf, vartype=VarType.CONTINUOUS, update=True):
         """ Add a variable to the current problem.
@@ -50,6 +48,12 @@ class Solver(object):
             update (bool): update problem immediately (default: True)
         """
 
+        var = LpVariable(var_id, lowBound=lb, upBound=ub, cat=vartype_mapping[vartype])
+        self.var_ids.append(var_id)
+        self.variables[var_id] = var
+
+        #TODO: implement lazy caching 
+
     def add_constraint(self, constr_id, lhs, sense='=', rhs=0, update=True):
         """ Add a constraint to the current problem.
 
@@ -60,7 +64,22 @@ class Solver(object):
             rhs (float): right-hand side of equation (default: 0)
             update (bool): update problem immediately (default: True)
         """
-        pass
+
+        sense_map = {
+            '=': LpConstraintEQ,
+            '<': LpConstraintLE,
+            '>': LpConstraintGE,
+        }
+
+        expr = LpAffineExpression({self.variables[var_id]: val for var_id, val in lhs.items()})
+        
+        constr = LpConstraint(e=expr, sense=sense_map[sense], name=constr_id, rhs=rhs)
+        
+        self.constr_ids.append(constr_id)
+        self.constraints[constr_id] = constr
+        self.problem += constr
+
+        #TODO: implement lazy caching 
 
     def remove_variable(self, var_id):
         """ Remove a variable from the current problem.
@@ -68,7 +87,8 @@ class Solver(object):
         Arguments:
             var_id (str): variable identifier
         """
-        pass
+        self.var_ids.remove(var_id)
+        del self.variables[var_id]
 
     def remove_variables(self, var_ids):
         """ Remove variables from the current problem.
@@ -76,7 +96,8 @@ class Solver(object):
         Arguments:
             var_ids (list): variable identifiers
         """
-        pass
+        for var_id in var_ids:
+            self.remove_variable(var_id)
 
     def remove_constraint(self, constr_id):
         """ Remove a constraint from the current problem.
@@ -84,7 +105,8 @@ class Solver(object):
         Arguments:
             constr_id (str): constraint identifier
         """
-        pass
+        self.constr_ids.remove(constr_id)
+        del self.constraints[constr_id]
 
     def remove_constraints(self, constr_ids):
         """ Remove constraints from the current problem.
@@ -92,7 +114,8 @@ class Solver(object):
         Arguments:
             constr_ids (list): constraint identifiers
         """
-        pass
+        for constr_id in constr_ids:
+            self.remove_constraint(constr_id)
 
     def list_variables(self):
         """ Get a list of the variable ids defined for the current problem.
@@ -116,8 +139,10 @@ class Solver(object):
             bounds_dict (dict): lower and upper bounds
         """
 
-        raise Exception('Not implemented for this solver.')
-
+        for var_id, (lb, ub) in bounds_dict.items():
+            self.variables[var_id].lowBound = lb
+            self.variables[var_id].upBound = ub
+ 
     def update(self):
         """ Update internal structure. Used for efficient lazy updating. """
         pass
@@ -134,7 +159,13 @@ class Solver(object):
             Setting the objective is optional. It can also be passed directly when calling **solve**.
 
         """
-        pass
+
+        if quadratic is not None:
+            raise Exception('PuLP wrapper does not support quadratic objectives.')
+        
+        objective = lpSum([coeff * self.variables[var_id] for var_id, coeff in linear.items() if coeff != 0])
+        self.model += objective
+        self.model.sense = LpMinimize if minimize else LpMaximize
 
     def build_problem(self, model):
         """ Create problem structure for a given model.
@@ -172,8 +203,46 @@ class Solver(object):
             Solution: solution
         """
 
-        # An exception is raised if the subclass does not implement this method.
-        raise Exception('Not implemented for this solver.')
+        if model:
+            self.build_problem(model)
+
+        if constraints:
+            changed_lb, changed_ub = self.temporary_bounds(constraints)
+
+        self.set_objective(linear, quadratic, minimize)
+
+        if pool_size > 1: 
+            raise Exception('Solution pool not implemented for PuLP wrapper.')
+        else:
+            status = self.problem.solve()
+
+            status = status_mapping.get(status, Status.UNKNOWN)
+            message = str(status)
+
+            if status == Status.OPTIMAL:
+                fobj = value(self.problem.objective)
+                values, s_prices, r_costs = None, None, None
+
+            if get_values:
+                if isinstance(get_values, list):
+                    values = {r_id: value(r_id) for r_id in get_values}
+                else:
+                    values = {var_id: value(var_id) for var_id in self.var_ids}
+
+                if shadow_prices:
+                    pass #TODO: implement
+
+                if reduced_costs:
+                    pass #TODO: implement
+
+                solution = Solution(status, message, fobj, values, s_prices, r_costs)
+            else:
+                solution = Solution(status, message)
+
+        if constraints:
+            self.reset_bounds(changed_lb, changed_ub)
+
+        return solution
 
     def get_solution_pool(self, get_values=True):
         """ Return a solution pool for MILP problems.
@@ -225,7 +294,7 @@ class Solver(object):
             filename (str): file path
         """
 
-        raise Exception('Not implemented for this solver.')
+        self.problem.writeLP(filename)
 
 
 
