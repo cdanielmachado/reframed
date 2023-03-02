@@ -81,13 +81,13 @@ def pFBA(model, objective=None, obj_frac=None, minimize=False, constraints=None,
         solver.pFBA_flag = True
         for r_id in reactions:
             if model.reactions[r_id].reversible:
-                pos, neg = r_id + '+', r_id + '-'
+                pos, neg = r_id + '_p', r_id + '_n'
                 solver.add_variable(pos, 0, inf, update=False)
                 solver.add_variable(neg, 0, inf,  update=False)
         solver.update()
         for r_id in reactions:
             if model.reactions[r_id].reversible:
-                pos, neg = r_id + '+', r_id + '-'
+                pos, neg = r_id + '_p', r_id + '_n'
                 solver.add_constraint('c' + pos, {r_id: -1, pos: 1}, '>', 0, update=False)
                 solver.add_constraint('c' + neg, {r_id: 1, neg: 1}, '>', 0, update=False)
         solver.update()
@@ -95,7 +95,7 @@ def pFBA(model, objective=None, obj_frac=None, minimize=False, constraints=None,
     objective = dict()
     for r_id in reactions:
         if model.reactions[r_id].reversible:
-            pos, neg = r_id + '+', r_id + '-'
+            pos, neg = r_id + '_p', r_id + '_n'
             objective[pos] = 1
             objective[neg] = 1
         else:
@@ -108,7 +108,7 @@ def pFBA(model, objective=None, obj_frac=None, minimize=False, constraints=None,
     if cleanup:
         for r_id in reactions:
             if model.reactions[r_id].reversible:
-                pos, neg = r_id + '+', r_id + '-'
+                pos, neg = r_id + '_p', r_id + '_n'
                 del solution.values[pos]
                 del solution.values[neg]
 

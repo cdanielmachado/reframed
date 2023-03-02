@@ -217,7 +217,7 @@ class PuLPSolver(Solver):
             self.build_problem(model)
 
         if constraints:
-            changed_lb, changed_ub = self.temporary_bounds(constraints)
+            old_bounds = self.temporary_bounds(constraints)
 
         self.set_objective(linear, quadratic, minimize)
 
@@ -233,11 +233,11 @@ class PuLPSolver(Solver):
                 fobj = value(self.problem.objective)
                 values, s_prices, r_costs = None, None, None
 
-            if get_values:
-                if isinstance(get_values, list):
-                    values = {r_id: value(self.variables[r_id]) for r_id in get_values}
-                else:
-                    values = {var_id: value(var) for var_id, var in self.variables.items()}
+                if get_values:
+                    if isinstance(get_values, list):
+                        values = {r_id: value(self.variables[r_id]) for r_id in get_values}
+                    else:
+                        values = {var_id: value(var) for var_id, var in self.variables.items()}
 
                 if shadow_prices:
                     pass #TODO: implement
@@ -250,52 +250,28 @@ class PuLPSolver(Solver):
                 solution = Solution(status, message)
 
         if constraints:
-            self.reset_bounds(changed_lb, changed_ub)
+            self.reset_bounds(old_bounds)
 
         return solution
+    
+    def temporary_bounds(self, constraints):
 
-    def get_solution_pool(self, get_values=True):
-        """ Return a solution pool for MILP problems.
-        Must be called after using solve with pool_size argument > 0.
+        old_bounds = {}
 
-        Arguments:
+        for r_id, x in constraints.items():
+            lb, ub = x if isinstance(x, tuple) else (x, x)
+            old_bounds[r_id] = (self.variables[r_id].lowBound, self.variables[r_id].upBound)
+            self.variables[r_id].lowBound = None if lb == -inf else lb
+            self.variables[r_id].upBound = None if ub == inf else ub
 
-            get_values (bool or list): set to false for speedup if you only care about the objective value (default: True)
+        return old_bounds
+    
+    def reset_bounds(self, old_bounds):
 
-        Returns:
-            list: list of Solution objects
+        for r_id, (lb, ub) in old_bounds.items():
+            self.variables[r_id].lowBound = lb
+            self.variables[r_id].upBound = ub
 
-        """
-        raise Exception('Not implemented for this solver.')
-
-    def set_parameter(self, parameter, value):
-        """ Set a parameter value for this optimization problem
-
-        Arguments:
-            parameter (Parameter): parameter type
-            value (float): parameter value
-        """
-
-        raise Exception('Not implemented for this solver.')
-
-    def set_parameters(self, parameters):
-        """ Set values for multiple parameters
-
-        Arguments:
-            parameters (dict of Parameter to value): parameter values
-        """
-
-        for parameter, value in parameters.items():
-            self.set_parameter(parameter, value)
-
-    def set_logging(self, enabled=False):
-        """ Enable or disable log output:
-
-        Arguments:
-            enabled (bool): turn logging on (default: False)
-        """
-
-        raise Exception('Not implemented for this solver.')
 
     def write_to_file(self, filename):
         """ Write problem to file:
