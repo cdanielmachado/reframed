@@ -1,16 +1,15 @@
 from math import inf
-from .solver import Solver, VarType, Parameter, default_parameters
+from .solver import Solver, VarType#, Parameter, default_parameters
 from .solution import Solution, Status
-from pulp import LpProblem, LpVariable, LpConstraint, LpAffineExpression, lpSum, value
-from pulp.constants import LpBinary, LpContinuous, LpInteger, LpConstraintEQ, LpConstraintGE, LpConstraintLE, LpMaximize, LpMinimize, LpStatus
-
+from pulp import LpProblem, LpVariable, LpConstraint, LpAffineExpression, lpSum, value, getSolver, LpSolverDefault
+from pulp.constants import *
 
 status_mapping = {
-    LpStatus.LpSolutionOptimal: Status.OPTIMAL,
-    LpStatus.LpSolutionStatusInfeasible: Status.INFEASIBLE,
-    LpStatus.LpSolutionNoSolutionFound: Status.INF_OR_UNB,
-    LpStatus.LpSolutionStatusUnbounded: Status.UNBOUNDED,
-    LpStatus.LpSolutionIntegerFeasible: Status.SUBOPTIMAL
+    LpSolutionOptimal: Status.OPTIMAL,
+    LpSolutionInfeasible: Status.INFEASIBLE,
+    LpSolutionNoSolutionFound: Status.INF_OR_UNB,
+    LpSolutionUnbounded: Status.UNBOUNDED,
+    LpSolutionIntegerFeasible: Status.SUBOPTIMAL
 }
 
 
@@ -24,12 +23,17 @@ vartype_mapping = {
 class PuLPSolver(Solver):
     """ Implements the solver interface using PuLP. """
 
-    def __init__(self, model=None):
+    def __init__(self, model=None, interface=None):
         Solver.__init__(self)
 
         self.problem = LpProblem()
         self.variables = {}
         self.constraints = {}
+
+        if interface is None:
+            self.interface = LpSolverDefault
+        else:
+            self.interface = getSolver(interface)
 
 #        self.set_parameters(default_parameters)
 #        self.set_logging(False)
@@ -48,9 +52,15 @@ class PuLPSolver(Solver):
             update (bool): update problem immediately (default: True)
         """
 
+        # fix infinity
+        lb = None if lb == -inf else lb
+        ub = None if ub == inf else ub
+
+
         var = LpVariable(var_id, lowBound=lb, upBound=ub, cat=vartype_mapping[vartype])
         self.var_ids.append(var_id)
         self.variables[var_id] = var
+        self.problem.addVariable(var)
 
         #TODO: implement lazy caching 
 
@@ -77,7 +87,7 @@ class PuLPSolver(Solver):
         
         self.constr_ids.append(constr_id)
         self.constraints[constr_id] = constr
-        self.problem += constr
+        self.problem.addConstraint(constr)
 
         #TODO: implement lazy caching 
 
@@ -164,8 +174,8 @@ class PuLPSolver(Solver):
             raise Exception('PuLP wrapper does not support quadratic objectives.')
         
         objective = lpSum([coeff * self.variables[var_id] for var_id, coeff in linear.items() if coeff != 0])
-        self.model += objective
-        self.model.sense = LpMinimize if minimize else LpMaximize
+        self.problem.setObjective(objective)
+        self.problem.sense = LpMinimize if minimize else LpMaximize
 
     def build_problem(self, model):
         """ Create problem structure for a given model.
@@ -183,7 +193,7 @@ class PuLPSolver(Solver):
             self.add_constraint(m_id, table[m_id], update=False)
         self.update()
 
-    def solve(self, linear=None, quadratic=None, minimize=None, model=None, constraints=None, get_values=True,
+    def solve(self, linear=None, quadratic=None, minimize=True, model=None, constraints=None, get_values=True,
               shadow_prices=False, reduced_costs=False, pool_size=0, pool_gap=None):
         """ Solve the optimization problem.
 
@@ -214,7 +224,7 @@ class PuLPSolver(Solver):
         if pool_size > 1: 
             raise Exception('Solution pool not implemented for PuLP wrapper.')
         else:
-            status = self.problem.solve()
+            status = self.problem.solve(self.interface)
 
             status = status_mapping.get(status, Status.UNKNOWN)
             message = str(status)
@@ -225,9 +235,9 @@ class PuLPSolver(Solver):
 
             if get_values:
                 if isinstance(get_values, list):
-                    values = {r_id: value(r_id) for r_id in get_values}
+                    values = {r_id: value(self.variables[r_id]) for r_id in get_values}
                 else:
-                    values = {var_id: value(var_id) for var_id in self.var_ids}
+                    values = {var_id: value(var) for var_id, var in self.variables.items()}
 
                 if shadow_prices:
                     pass #TODO: implement
