@@ -23,6 +23,9 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
     ],
     description="metabolic modeling package",
     install_requires=requirements,
@@ -36,6 +39,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/cdanielmachado/reframed',
-    version='1.2.1',
+    version='1.3.0',
     zip_safe=False,
 )
