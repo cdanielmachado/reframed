@@ -1,5 +1,3 @@
-from .solver import Parameter
-
 solvers = dict()
 
 try:
@@ -30,6 +28,18 @@ except ImportError:
 try:
     from .pulp_solver import HiGHS_Solver
     solvers['highs'] = HiGHS_Solver
+except ImportError:
+    pass
+
+try:
+    from .pulp_solver import PulpCplex
+    solvers['pulp_cplex'] = PulpCplex
+except ImportError:
+    pass
+
+try:
+    from .pulp_solver import PulpGurobi
+    solvers['pulp_gurobi'] = PulpGurobi
 except ImportError:
     pass
 

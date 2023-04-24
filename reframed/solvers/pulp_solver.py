@@ -288,6 +288,17 @@ class SCIP_Solver(PuLPSolver):
     def __init__(self, model=None):
         PuLPSolver.__init__(self, model, 'SCIP_CMD')
 
+
 class HiGHS_Solver(PuLPSolver):
     def __init__(self, model=None):
         PuLPSolver.__init__(self, model, 'HiGHS_CMD')
+
+
+class PulpCplex(PuLPSolver):
+    def __init__(self, model=None):
+        PuLPSolver.__init__(self, model, 'CPLEX_PY')
+
+
+class PulpGurobi(PuLPSolver):
+    def __init__(self, model=None):
+        PuLPSolver.__init__(self, model, 'GUROBI')
