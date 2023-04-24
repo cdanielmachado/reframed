@@ -173,9 +173,10 @@ class PuLPSolver(Solver):
         if quadratic is not None:
             raise Exception('PuLP wrapper does not support quadratic objectives.')
         
-        objective = lpSum([coeff * self.variables[var_id] for var_id, coeff in linear.items() if coeff != 0])
-        self.problem.setObjective(objective)
-        self.problem.sense = LpMinimize if minimize else LpMaximize
+        if linear is not None:
+            objective = lpSum([coeff * self.variables[var_id] for var_id, coeff in linear.items() if coeff != 0])
+            self.problem.setObjective(objective)
+            self.problem.sense = LpMinimize if minimize else LpMaximize
 
     def build_problem(self, model):
         """ Create problem structure for a given model.
@@ -283,4 +284,10 @@ class PuLPSolver(Solver):
         self.problem.writeLP(filename)
 
 
+class SCIP_Solver(PuLPSolver):
+    def __init__(self, model=None):
+        PuLPSolver.__init__(self, model, 'SCIP_CMD')
 
+class HiGHS_Solver(PuLPSolver):
+    def __init__(self, model=None):
+        PuLPSolver.__init__(self, model, 'HiGHS_CMD')

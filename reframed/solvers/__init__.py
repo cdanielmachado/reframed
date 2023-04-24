@@ -21,6 +21,18 @@ try:
 except ImportError:
     pass
 
+try:
+    from .pulp_solver import SCIP_Solver
+    solvers['scip'] = SCIP_Solver
+except ImportError:
+    pass
+
+try:
+    from .pulp_solver import HiGHS_Solver
+    solvers['highs'] = HiGHS_Solver
+except ImportError:
+    pass
+
 
 default_solver = None
 
@@ -32,7 +44,7 @@ def get_default_solver():
     if default_solver:
         return default_solver
 
-    solver_order = ['cplex', 'gurobi', 'optlang']
+    solver_order = ['gurobi', 'cplex', 'highs', 'scip', 'optlang']
 
     for solver in solver_order:
         if solver in list(solvers.keys()):
