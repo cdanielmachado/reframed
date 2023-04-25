@@ -236,7 +236,8 @@ class GurobiSolver(Solver):
                     warn(f"Constrained variable '{r_id}' not previously declared")
             problem.update()
 
-        self.set_objective(linear, quadratic, minimize)
+        if linear is not None or quadratic is not None:
+            self.set_objective(linear, quadratic, minimize)
 
         # run the optimization
         if pool_size <= 1:
