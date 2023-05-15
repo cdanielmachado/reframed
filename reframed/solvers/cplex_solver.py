@@ -291,7 +291,7 @@ class CplexSolver(Solver):
         self.add_constraints(constr_ids, lhs, senses, rhs)
 
     def solve(self, linear=None, quadratic=None, minimize=None, model=None, constraints=None, get_values=True,
-              shadow_prices=False, reduced_costs=False, pool_size=0, pool_gap=None):
+              shadow_prices=False, reduced_costs=False, pool_size=0, pool_gap=None, emphasis=None, timelimit=None):
         """ Solve the optimization problem.
 
         Arguments:
@@ -305,6 +305,8 @@ class CplexSolver(Solver):
             reduced_costs (bool): return reduced costs if available (default: False)
             pool_size (int): calculate solution pool of given size (only for MILP problems)
             pool_gap (float): maximum relative gap for solutions in pool (optional)
+            emphasis (int): MIP emphasis switch. Controls trade-offs between speed, feasibility, optimality, and moving bounds in MIP  (default: Balance optimality and feasibility)
+            timelimit (int): Sets the maximum time, in seconds, for a call to an optimizer (default: no limit)
 
         Returns:
             Solution: solution
@@ -323,7 +325,10 @@ class CplexSolver(Solver):
         # run the optimization
 
         if pool_size <= 1:
-
+            
+            if emphasis: problem.parameters.emphasis.mip.set(emphasis)
+            if timelimit: problem.parameters.timelimit.set(timelimit)
+                
             problem.solve()
 
             status = self.status_mapping.get(problem.solution.get_status(), Status.UNKNOWN)
