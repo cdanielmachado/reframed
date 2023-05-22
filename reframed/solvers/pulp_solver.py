@@ -33,10 +33,15 @@ class PuLPSolver(Solver):
         if interface is None:
             self.interface = LpSolverDefault
         else:
-            self.interface = getSolver(interface)
+            self.interface = getSolver(interface, msg=False)
 
-#        self.set_parameters(default_parameters)
-#        self.set_logging(False)
+            # if interface == 'HiGHS_CMD':
+            #     self.interface = getSolver(interface, timeLimit=3600)
+
+            # if interface == 'SCIP_CMD':
+            #     self.interface = getSolver(interface, timeLimit=3600, options=["set presolving maxrounds 0"])
+
+    #    self.set_parameters(default_parameters)
 
         if model:
             self.build_problem(model)
