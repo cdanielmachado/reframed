@@ -64,8 +64,7 @@ Available methods
 Credits and License
 -------------------
 
-Developed by Daniel Machado at the European Molecular Biology Laboratory
-(2019).
+Developed by Daniel Machado at the Norwegian University of Science and Technology (NTNU).
 
 **ReFramed** is a refactored version of the
 `framed <https://github.com/cdanielmachado/framed>`__ library.
