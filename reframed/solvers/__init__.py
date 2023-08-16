@@ -14,20 +14,26 @@ except ImportError:
     pass
 
 try:
+    from .scip_solver import SCIPSolver
+    solvers['scip'] = SCIPSolver
+except ImportError:
+    pass
+
+try:
     from .optlang_solver import OptLangSolver
     solvers['optlang'] = OptLangSolver
 except ImportError:
     pass
 
 try:
-    from .pulp_solver import SCIP_Solver
-    solvers['scip'] = SCIP_Solver
+    from .pulp_solver import PuLPSCIP
+    solvers['pulp_scip'] = PuLPSCIP
 except ImportError:
     pass
 
 try:
-    from .pulp_solver import HiGHS_Solver
-    solvers['highs'] = HiGHS_Solver
+    from .pulp_solver import PuLPHiGHS
+    solvers['pulp_highs'] = PuLPHiGHS
 except ImportError:
     pass
 
@@ -54,7 +60,7 @@ def get_default_solver():
     if default_solver:
         return default_solver
 
-    solver_order = ['gurobi', 'cplex', 'highs', 'scip', 'optlang']
+    solver_order = ['gurobi', 'cplex', 'scip', 'optlang']
 
     for solver in solver_order:
         if solver in list(solvers.keys()):
@@ -71,7 +77,7 @@ def set_default_solver(solvername):
     """ Sets default solver.
 
     Arguments:
-        solvername : (str) solver name (currently available: 'gurobi', 'cplex')
+        solvername : (str) solver name 
     """
 
     global default_solver

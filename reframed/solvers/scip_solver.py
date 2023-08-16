@@ -1,47 +1,35 @@
 from math import inf
-from .solver import Solver, VarType#, Parameter, default_parameters
+import operator
+from .solver import Solver, VarType
 from .solution import Solution, Status
-from pulp import LpProblem, LpVariable, LpConstraint, LpAffineExpression, lpSum, value, getSolver, LpSolverDefault
-from pulp.constants import *
+from pyscipopt import Model, quicksum
+from warnings import warn
+
+
 
 status_mapping = {
-    LpSolutionOptimal: Status.OPTIMAL,
-    LpSolutionInfeasible: Status.INFEASIBLE,
-    LpSolutionNoSolutionFound: Status.INF_OR_UNB,
-    LpSolutionUnbounded: Status.UNBOUNDED,
-    LpSolutionIntegerFeasible: Status.SUBOPTIMAL
+   "optimal": Status.OPTIMAL,
+   "infeasible": Status.INFEASIBLE,
+   "inforunbd": Status.INF_OR_UNB,
+   "unbounded": Status.UNBOUNDED,
 }
 
 
 vartype_mapping = {
-    VarType.BINARY: LpBinary,
-    VarType.INTEGER: LpInteger,
-    VarType.CONTINUOUS: LpContinuous
+    VarType.BINARY: 'B',
+    VarType.INTEGER: 'I',
+    VarType.CONTINUOUS: 'C',
 }
 
 
-class PuLPSolver(Solver):
-    """ Implements the solver interface using PuLP. """
+class SCIPSolver(Solver):
+    """ Implements the solver interface using SCIP. """
 
-    def __init__(self, model=None, interface=None, **kwargs):
+    def __init__(self, model=None):
         Solver.__init__(self)
+        self.problem = Model()
 
-        self.problem = LpProblem()
         self.variables = {}
-        self.constraints = {}
-
-        if interface is None:
-            self.interface = LpSolverDefault
-        else:
-            self.interface = getSolver(interface, msg=False, **kwargs)
-
-            # if interface == 'HiGHS_CMD':
-            #     self.interface = getSolver(interface, timeLimit=3600)
-
-            # if interface == 'SCIP_CMD':
-            #     self.interface = getSolver(interface, timeLimit=3600, options=["set presolving maxrounds 0"])
-
-    #    self.set_parameters(default_parameters)
 
         if model:
             self.build_problem(model)
@@ -61,13 +49,14 @@ class PuLPSolver(Solver):
         lb = None if lb == -inf else lb
         ub = None if ub == inf else ub
 
-
-        var = LpVariable(var_id, lowBound=lb, upBound=ub, cat=vartype_mapping[vartype])
+        var = self.problem.addVar(name=var_id, lb=lb, ub=ub, vtype=vartype_mapping[vartype])
+        
         self.var_ids.append(var_id)
         self.variables[var_id] = var
-        self.problem.addVariable(var)
 
-        #TODO: implement lazy caching 
+        if not update:
+            warn('Lazy updating not (yet) implemented for SCIP.')
+
 
     def add_constraint(self, constr_id, lhs, sense='=', rhs=0, update=True):
         """ Add a constraint to the current problem.
@@ -81,20 +70,18 @@ class PuLPSolver(Solver):
         """
 
         sense_map = {
-            '=': LpConstraintEQ,
-            '<': LpConstraintLE,
-            '>': LpConstraintGE,
+            '=': operator.eq,
+            '<': operator.le,
+            '>': operator.ge,
         }
 
-        expr = LpAffineExpression({self.variables[var_id]: val for var_id, val in lhs.items()})
-        
-        constr = LpConstraint(e=expr, sense=sense_map[sense], name=constr_id, rhs=rhs)
-        
+        expr = quicksum({self.variables[var_id] * coeff for var_id, coeff in lhs.items()})
+        constr = sense_map[sense](expr,rhs)
+        self.problem.addCons(constr, name=constr_id)
         self.constr_ids.append(constr_id)
-        self.constraints[constr_id] = constr
-        self.problem.addConstraint(constr)
 
-        #TODO: implement lazy caching 
+        if not update:
+            warn('Lazy updating not (yet) implemented for SCIP.')
 
     def remove_variable(self, var_id):
         """ Remove a variable from the current problem.
@@ -103,6 +90,7 @@ class PuLPSolver(Solver):
             var_id (str): variable identifier
         """
         self.var_ids.remove(var_id)
+        self.problem.delVar(var_id)
         del self.variables[var_id]
 
     def remove_variables(self, var_ids):
@@ -121,6 +109,7 @@ class PuLPSolver(Solver):
             constr_id (str): constraint identifier
         """
         self.constr_ids.remove(constr_id)
+        self.problem.delCons(constr_id)
         del self.constraints[constr_id]
 
     def remove_constraints(self, constr_ids):
@@ -155,8 +144,8 @@ class PuLPSolver(Solver):
         """
 
         for var_id, (lb, ub) in bounds_dict.items():
-            self.variables[var_id].lowBound = lb
-            self.variables[var_id].upBound = ub
+            self.problem.chgVarLb(var_id, lb)
+            self.problem.chgVarUb(var_id, ub)
  
     def update(self):
         """ Update internal structure. Used for efficient lazy updating. """
@@ -176,12 +165,11 @@ class PuLPSolver(Solver):
         """
 
         if quadratic is not None:
-            raise Exception('PuLP wrapper does not support quadratic objectives.')
+             raise Exception('Not yet implemented for SCIP wrapper.')
         
         if linear is not None:
-            objective = lpSum([coeff * self.variables[var_id] for var_id, coeff in linear.items() if coeff != 0])
-            self.problem.setObjective(objective)
-            self.problem.sense = LpMinimize if minimize else LpMaximize
+             objective = quicksum(coeff * self.variables[var_id] for var_id, coeff in linear.items() if coeff != 0)
+             self.problem.setObjective(objective, sense='minimize' if minimize else 'maximize')
 
     def build_problem(self, model):
         """ Create problem structure for a given model.
@@ -228,32 +216,35 @@ class PuLPSolver(Solver):
         self.set_objective(linear, quadratic, minimize)
 
         if pool_size > 1: 
-            raise Exception('Solution pool not implemented for PuLP wrapper.')
+            raise Exception('Solution pool not implemented for SCIP wrapper.')
         else:
             status = self.problem.solve(self.interface)
 
             status = status_mapping.get(status, Status.UNKNOWN)
             message = str(status)
 
+            _solution = self.problem.getBestSol()
+
             if status == Status.OPTIMAL:
-                fobj = value(self.problem.objective)
+                fobj = self.problem.getObjVal()
                 values, s_prices, r_costs = None, None, None
 
                 if get_values:
                     if isinstance(get_values, list):
-                        values = {r_id: value(self.variables[r_id]) for r_id in get_values}
+                        values = {r_id: _solution[r_id] for r_id in get_values}
                     else:
-                        values = {var_id: value(var) for var_id, var in self.variables.items()}
+#                        values = {var_id: _solution[var] for var_id, var in self.variables.items()}
+                        values = {var_id: _solution[var_id] for var_id in self.var_ids}
 
-                if shadow_prices:
-                    pass #TODO: implement
+            #     if shadow_prices:
+            #         pass #TODO: implement
 
-                if reduced_costs:
-                    pass #TODO: implement
+            #     if reduced_costs:
+            #         pass #TODO: implement
 
-                solution = Solution(status, message, fobj, values, s_prices, r_costs)
+            #     solution = Solution(status, message, fobj, values, s_prices, r_costs)
             else:
-                solution = Solution(status, message)
+                 solution = Solution(status, message)
 
         if constraints:
             self.reset_bounds(old_bounds)
@@ -266,17 +257,17 @@ class PuLPSolver(Solver):
 
         for r_id, x in constraints.items():
             lb, ub = x if isinstance(x, tuple) else (x, x)
-            old_bounds[r_id] = (self.variables[r_id].lowBound, self.variables[r_id].upBound)
-            self.variables[r_id].lowBound = None if lb == -inf else lb
-            self.variables[r_id].upBound = None if ub == inf else ub
+            old_bounds[r_id] = (self.variables[r_id].lb, self.variables[r_id].ub)
+            self.problem.chgVarLb(r_id, None if lb == -inf else lb)
+            self.problem.chgVarUb(r_id, None if ub == inf else ub)
 
         return old_bounds
     
     def reset_bounds(self, old_bounds):
 
         for r_id, (lb, ub) in old_bounds.items():
-            self.variables[r_id].lowBound = lb
-            self.variables[r_id].upBound = ub
+             self.problem.chgVarLb(r_id, lb)
+             self.problem.chgVarUb(r_id, ub)
 
 
     def write_to_file(self, filename):
@@ -287,23 +278,3 @@ class PuLPSolver(Solver):
         """
 
         self.problem.writeLP(filename)
-
-
-class PuLPSCIP(PuLPSolver):
-    def __init__(self, model=None):
-        PuLPSolver.__init__(self, model, 'SCIP_CMD')
-
-
-class PuLPHiGHS(PuLPSolver):
-    def __init__(self, model=None):
-        PuLPSolver.__init__(self, model, 'HiGHS_CMD')
-
-
-class PulpCplex(PuLPSolver):
-    def __init__(self, model=None):
-        PuLPSolver.__init__(self, model, 'CPLEX_PY')
-
-
-class PulpGurobi(PuLPSolver):
-    def __init__(self, model=None):
-        PuLPSolver.__init__(self, model, 'GUROBI')
