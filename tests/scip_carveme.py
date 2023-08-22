@@ -6,13 +6,15 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16000
 #SBATCH --job-name="scip"
+#SBATCH --output="out_%j_%a.txt"
+#SBATCH --error="err_%j_%a.txt"
 
 
 from carveme import project_dir
 from subprocess import call
 import os
 
-data_path = project_dir + '/data/benchmark'
+data_path = project_dir + 'data/benchmark'
 index = int(os.environ['SLURM_ARRAY_TASK_ID'])
 org_id = ['bsub', 'ecol', 'mgen', 'paer', 'rsol', 'sone'][index]
 
@@ -60,7 +62,6 @@ essentiality_media = {
     'sone': 'LB'
 }
 
-print(f'Carving model for {organisms[org_id]}')
 
 fasta_file = f"{data_path}/fasta/{genomes[org_id]}"
 model_file = f"{data_path}/models/{org_id}.xml"
@@ -75,5 +76,9 @@ media = ','.join(media)
 
 gapfill = f'-g "{media}" --mediadb {mediadb}' if media else ''
 
-call(f'carve {fasta_file} -u {gram_status[org_id]} -o {model_file} {gapfill} --fbc2 --solver scip', shell=True)
+call_expr = f'carve {fasta_file} -u {gram_status[org_id]} -o {model_file} {gapfill} --fbc2 --solver scip'
+
+print(call_expr)
+
+call(call_expr, shell=True)
 
