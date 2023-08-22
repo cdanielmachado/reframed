@@ -3,8 +3,6 @@ import operator
 from .solver import Solver, VarType
 from .solution import Solution, Status
 from pyscipopt import Model, quicksum
-from warnings import warn
-
 
 
 status_mapping = {
@@ -28,6 +26,11 @@ class SCIPSolver(Solver):
     def __init__(self, model=None):
         Solver.__init__(self)
         self.problem = Model()
+#        self.problem.hideOutput()
+        self.problem.enableReoptimization()
+
+#        self.problem.setParam('limits/time', 300)
+#        self.problem.setParam('limits/gap', 0.01)
 
         self.variables = {}
 
@@ -54,10 +57,6 @@ class SCIPSolver(Solver):
         self.var_ids.append(var_id)
         self.variables[var_id] = var
 
-        if not update:
-            warn('Lazy updating not (yet) implemented for SCIP.')
-
-
     def add_constraint(self, constr_id, lhs, sense='=', rhs=0, update=True):
         """ Add a constraint to the current problem.
 
@@ -75,13 +74,10 @@ class SCIPSolver(Solver):
             '>': operator.ge,
         }
 
-        expr = quicksum({self.variables[var_id] * coeff for var_id, coeff in lhs.items()})
+        expr = quicksum(self.variables[var_id] * coeff for var_id, coeff in lhs.items())
         constr = sense_map[sense](expr,rhs)
         self.problem.addCons(constr, name=constr_id)
         self.constr_ids.append(constr_id)
-
-        if not update:
-            warn('Lazy updating not (yet) implemented for SCIP.')
 
     def remove_variable(self, var_id):
         """ Remove a variable from the current problem.
@@ -147,9 +143,6 @@ class SCIPSolver(Solver):
             self.problem.chgVarLb(var_id, lb)
             self.problem.chgVarUb(var_id, ub)
  
-    def update(self):
-        """ Update internal structure. Used for efficient lazy updating. """
-        pass
 
     def set_objective(self, linear=None, quadratic=None, minimize=True):
         """ Set a predefined objective for this problem.
@@ -165,11 +158,17 @@ class SCIPSolver(Solver):
         """
 
         if quadratic is not None:
-             raise Exception('Not yet implemented for SCIP wrapper.')
+             raise Exception('Quadratic objective not available for SCIP.')
         
         if linear is not None:
-             objective = quicksum(coeff * self.variables[var_id] for var_id, coeff in linear.items() if coeff != 0)
-             self.problem.setObjective(objective, sense='minimize' if minimize else 'maximize')
+             
+            if isinstance(linear, str):
+                linear = {linear: 1.0}
+        
+            objective = quicksum(coeff * self.variables[var_id] for var_id, coeff in linear.items() if coeff != 0)
+
+            self.problem.freeReoptSolve()
+            self.problem.chgReoptObjective(objective, sense='minimize' if minimize else 'maximize')
 
     def build_problem(self, model):
         """ Create problem structure for a given model.
@@ -180,12 +179,10 @@ class SCIPSolver(Solver):
 
         for r_id, reaction in model.reactions.items():
             self.add_variable(r_id, reaction.lb, reaction.ub, update=False)
-        self.update()
 
         table = model.metabolite_reaction_lookup()
         for m_id in model.metabolites:
             self.add_constraint(m_id, table[m_id], update=False)
-        self.update()
 
     def solve(self, linear=None, quadratic=None, minimize=True, model=None, constraints=None, get_values=True,
               shadow_prices=False, reduced_costs=False, pool_size=0, pool_gap=None):
@@ -216,12 +213,12 @@ class SCIPSolver(Solver):
         self.set_objective(linear, quadratic, minimize)
 
         if pool_size > 1: 
-            raise Exception('Solution pool not implemented for SCIP wrapper.')
+            raise Exception('Solution pool not yet implemented for SCIP wrapper.')
         else:
-            status = self.problem.solve(self.interface)
-
-            status = status_mapping.get(status, Status.UNKNOWN)
-            message = str(status)
+            self.problem.optimize()
+            _status = self.problem.getStatus()
+            status = status_mapping.get(_status, Status.UNKNOWN)
+            message = str(_status)
 
             _solution = self.problem.getBestSol()
 
@@ -231,20 +228,19 @@ class SCIPSolver(Solver):
 
                 if get_values:
                     if isinstance(get_values, list):
-                        values = {r_id: _solution[r_id] for r_id in get_values}
+                        values = {r_id: _solution[self.variables[r_id]] for r_id in get_values}
                     else:
-#                        values = {var_id: _solution[var] for var_id, var in self.variables.items()}
-                        values = {var_id: _solution[var_id] for var_id in self.var_ids}
+                        values = {var_id: _solution[var] for var_id, var in self.variables.items()}
 
-            #     if shadow_prices:
-            #         pass #TODO: implement
+                if shadow_prices:
+                    pass #TODO: implement
 
-            #     if reduced_costs:
-            #         pass #TODO: implement
+                if reduced_costs:
+                    pass #TODO: implement
 
-            #     solution = Solution(status, message, fobj, values, s_prices, r_costs)
+                solution = Solution(status, message, fobj, values, s_prices, r_costs)
             else:
-                 solution = Solution(status, message)
+                solution = Solution(status, message)
 
         if constraints:
             self.reset_bounds(old_bounds)
@@ -257,17 +253,18 @@ class SCIPSolver(Solver):
 
         for r_id, x in constraints.items():
             lb, ub = x if isinstance(x, tuple) else (x, x)
-            old_bounds[r_id] = (self.variables[r_id].lb, self.variables[r_id].ub)
-            self.problem.chgVarLb(r_id, None if lb == -inf else lb)
-            self.problem.chgVarUb(r_id, None if ub == inf else ub)
+            old_bounds[r_id] = (self.variables[r_id].getLbOriginal(), self.variables[r_id].getUbOriginal())
+            self.problem.chgVarLb(self.variables[r_id], None if lb == -inf else lb)
+            self.problem.chgVarUb(self.variables[r_id], None if ub == inf else ub)
 
         return old_bounds
     
     def reset_bounds(self, old_bounds):
 
+        self.problem.freeTransform()
         for r_id, (lb, ub) in old_bounds.items():
-             self.problem.chgVarLb(r_id, lb)
-             self.problem.chgVarUb(r_id, ub)
+             self.problem.chgVarLb(self.variables[r_id], lb)
+             self.problem.chgVarUb(self.variables[r_id], ub)
 
 
     def write_to_file(self, filename):
@@ -278,3 +275,13 @@ class SCIPSolver(Solver):
         """
 
         self.problem.writeLP(filename)
+
+    def set_logging(self, enabled=False):
+        """ Enable or disable log output:
+
+        Arguments:
+            enabled (bool): turn logging on (default: False)
+        """
+
+        self.problem.hideOutput(quiet=(not enabled))
+
