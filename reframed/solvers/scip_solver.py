@@ -3,6 +3,7 @@ import operator
 from .solver import Solver, VarType
 from .solution import Solution, Status
 from pyscipopt import Model, quicksum
+from warnings import warn
 
 
 status_mapping = {
@@ -10,6 +11,16 @@ status_mapping = {
    "infeasible": Status.INFEASIBLE,
    "inforunbd": Status.INF_OR_UNB,
    "unbounded": Status.UNBOUNDED,
+   "timelimit": Status.SUBOPTIMAL,
+   "nodelimit": Status.SUBOPTIMAL,
+   "timelimit": Status.SUBOPTIMAL,
+   "totalnodelimit": Status.SUBOPTIMAL,
+   "stallnodelimit": Status.SUBOPTIMAL,
+   "gaplimit": Status.SUBOPTIMAL,
+   "memlimit": Status.SUBOPTIMAL,
+   "sollimit": Status.SUBOPTIMAL,
+   "bestsollimit": Status.SUBOPTIMAL,
+   "restartlimit": Status.SUBOPTIMAL,
 }
 
 
@@ -26,11 +37,11 @@ class SCIPSolver(Solver):
     def __init__(self, model=None):
         Solver.__init__(self)
         self.problem = Model()
-#        self.problem.hideOutput()
+        self.problem.hideOutput()
         self.problem.enableReoptimization()
 
-#        self.problem.setParam('limits/time', 300)
-#        self.problem.setParam('limits/gap', 0.01)
+#        self.problem.setParam('limits/time', 3600)
+#        self.problem.setParam('limits/gap', 0.0001)
 
         self.variables = {}
 
@@ -185,7 +196,7 @@ class SCIPSolver(Solver):
             self.add_constraint(m_id, table[m_id], update=False)
 
     def solve(self, linear=None, quadratic=None, minimize=True, model=None, constraints=None, get_values=True,
-              shadow_prices=False, reduced_costs=False, pool_size=0, pool_gap=None):
+              shadow_prices=False, reduced_costs=False, pool_size=0, pool_gap=None, suboptimal=False):
         """ Solve the optimization problem.
 
         Arguments:
@@ -208,7 +219,10 @@ class SCIPSolver(Solver):
             self.build_problem(model)
 
         if constraints:
-            old_bounds = self.temporary_bounds(constraints)
+            try:
+                old_bounds = self.temporary_bounds(constraints)
+            except:
+                warn('SCIP: unable to set temporary bounds')
 
         self.set_objective(linear, quadratic, minimize)
 
@@ -222,7 +236,7 @@ class SCIPSolver(Solver):
 
             _solution = self.problem.getBestSol()
 
-            if status == Status.OPTIMAL:
+            if status == Status.OPTIMAL or status == Status.SUBOPTIMAL and suboptimal:
                 fobj = self.problem.getObjVal()
                 values, s_prices, r_costs = None, None, None
 
@@ -238,12 +252,15 @@ class SCIPSolver(Solver):
                 if reduced_costs:
                     pass #TODO: implement
 
-                solution = Solution(status, message, fobj, values, s_prices, r_costs)
+                solution = Solution(Status.OPTIMAL, message, fobj, values, s_prices, r_costs)
             else:
                 solution = Solution(status, message)
 
         if constraints:
-            self.reset_bounds(old_bounds)
+            try:
+                self.reset_bounds(old_bounds)
+            except:
+                warn('SCIP: unable to reset bounds')
 
         return solution
     
@@ -261,7 +278,8 @@ class SCIPSolver(Solver):
     
     def reset_bounds(self, old_bounds):
 
-        self.problem.freeTransform()
+#        self.problem.freeTransform()
+        self.problem.freeReoptSolve()
         for r_id, (lb, ub) in old_bounds.items():
              self.problem.chgVarLb(self.variables[r_id], lb)
              self.problem.chgVarUb(self.variables[r_id], ub)
@@ -274,7 +292,7 @@ class SCIPSolver(Solver):
             filename (str): file path
         """
 
-        self.problem.writeLP(filename)
+        self.problem.writeProblem(filename)
 
     def set_logging(self, enabled=False):
         """ Enable or disable log output:
