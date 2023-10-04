@@ -23,7 +23,7 @@ vartype_mapping = {
 class PuLPSolver(Solver):
     """ Implements the solver interface using PuLP. """
 
-    def __init__(self, model=None, interface=None, **kwargs):
+    def __init__(self, model=None, interface=None, lpmethod=None, **kwargs):
         Solver.__init__(self)
 
         self.problem = LpProblem()
@@ -32,17 +32,44 @@ class PuLPSolver(Solver):
 
         if interface is None:
             self.interface = LpSolverDefault
-        else:
+        elif lpmethod is None:
             self.interface = getSolver(interface, msg=False, **kwargs)
-
-            # if interface == 'HiGHS_CMD':
-            #     self.interface = getSolver(interface, timeLimit=3600)
-
-            # if interface == 'SCIP_CMD':
-            #     self.interface = getSolver(interface, timeLimit=3600, options=["set presolving maxrounds 0"])
-
-    #    self.set_parameters(default_parameters)
-
+        elif lpmethod == 'primal' and interface == 'CPLEX_PY':
+            self.interface = getSolver(interface, msg=False, method=1, **kwargs)
+        elif lpmethod == 'dual' and interface == 'CPLEX_PY':
+            self.interface = getSolver(interface, msg=False, method=2, **kwargs)
+        elif lpmethod == 'barrier' and interface == 'CPLEX_PY':
+            self.interface = getSolver(interface, msg=False, method=4, **kwargs)
+        elif lpmethod == 'primal' and interface == 'GUROBI':
+            self.interface = getSolver(interface, msg=False, method=0, **kwargs)
+        elif lpmethod == 'dual' and interface == 'GUROBI':
+            self.interface = getSolver(interface, msg=False, method=1, **kwargs)
+        elif lpmethod == 'barrier' and interface == 'GUROBI':
+            self.interface = getSolver(interface, msg=False, method=2, **kwargs)
+        elif lpmethod == 'primal' and interface == 'GLPK_CMD':
+            self.interface = getSolver(interface, msg=False, options=['--simplex'], **kwargs)
+        elif lpmethod == 'dual' and interface == 'GLPK_CMD':
+            self.interface = getSolver(interface, msg=False, options=['--dual'], **kwargs)
+        elif lpmethod == 'barrier' and interface == 'GLPK_CMD':
+            self.interface = getSolver(interface, msg=False, options=['--interior'], **kwargs)
+        elif lpmethod == 'primal' and interface == 'COIN_CMD':
+            self.interface = getSolver(interface, msg=False, options=['primalS'], **kwargs)
+        elif lpmethod == 'dual' and interface == 'COIN_CMD':
+            self.interface = getSolver(interface, msg=False, options=['dualS'], **kwargs)
+        elif lpmethod == 'barrier' and interface == 'COIN_CMD':
+            self.interface = getSolver(interface, msg=False, options=['barrier'], **kwargs)        
+        elif lpmethod == 'primal' and interface == 'HiGHS_CMD':
+            self.interface = getSolver(interface, msg=False, options=['primal'], **kwargs)
+        elif lpmethod == 'dual' and interface == 'HiGHS_CMD':
+            self.interface = getSolver(interface, msg=False, options=['--solver simplex'], **kwargs)
+        elif lpmethod == 'barrier' and interface == 'HiGHS_CMD':
+            self.interface = getSolver(interface, msg=False, options=['--solver ipm'], **kwargs) 
+        elif lpmethod == 'primal' and interface == 'SCIP_CMD':
+            self.interface = getSolver(interface, msg=False, options=['set lp initalgorithm p', 'set lp resolvealgorithm p'], **kwargs)
+        elif lpmethod == 'dual' and interface == 'SCIP_CMD':
+            self.interface = getSolver(interface, msg=False, options=['set lp initalgorithm d', 'set lp resolvealgorithm d'], **kwargs)
+        elif lpmethod == 'barrier' and interface == 'SCIP_CMD':
+            self.interface = getSolver(interface, msg=False, options=['set lp initalgorithm b', 'set lp resolvealgorithm b'], **kwargs)
         if model:
             self.build_problem(model)
 
@@ -230,7 +257,10 @@ class PuLPSolver(Solver):
         if pool_size > 1: 
             raise Exception('Solution pool not implemented for PuLP wrapper.')
         else:
-            status = self.problem.solve(self.interface)
+            try:
+                status = self.problem.solve(self.interface)
+            except:
+                return Solution(Status.UNKNOWN, 'unknown solver error' )              
 
             status = status_mapping.get(status, Status.UNKNOWN)
             message = str(status)
