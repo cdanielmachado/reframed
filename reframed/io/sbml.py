@@ -50,6 +50,9 @@ class ExchangeDetection(Enum):
 DEFAULT_SBML_LEVEL = 3
 DEFAULT_SBML_VERSION = 1
 
+IDENTIFIERS_PATTERN = re.compile(r'/([^/]+)/([^/]+)$')
+
+
 non_alphanum = re.compile(r'\W+')
 re_type = type(non_alphanum)
 
@@ -539,9 +542,38 @@ def extract_metadata(sbml_elem, elem):
     if notes:
         recursive_node_parser(notes, elem.metadata)
 
-    annotation = sbml_elem.getAnnotationString()
-    if annotation:
-        elem.metadata['XMLAnnotation'] = annotation
+    parse_annotations(sbml_elem, elem)
+
+def parse_annotations(sbml_elem, elem):
+    """
+    Parse the annotations found in XML Annotations like
+    http://identifiers.org/reactome/R-ALL-419151
+
+    There is a question whether all annotations should be added as lists, or 
+    only in those cases where you have multiple annotations from the same db, 
+    and then keep the rest as strings. Now, all annotations gets added as lists.
+
+    """
+    for term in sbml_elem.getCVTerms():
+        n_resources = term.getNumResources()
+        for i  in range(n_resources):
+            match = IDENTIFIERS_PATTERN.search(term.getResourceURI(i))
+            if match:
+                db = match.group(1)
+                db_id = match.group(2)
+
+                try:
+                    elem.metadata[db]
+                except KeyError:
+                    elem.metadata[db] = [db_id]
+                else:
+                    elem.metadata[db].append(db_id)
+
+            else:
+                warn(f'Could not extract annotation from {term.getResourceURI(i)}')
+
+
+
 
 
 def recursive_node_parser(node, cache):
