@@ -45,6 +45,7 @@ class SCIPSolver(Solver):
 #        self.problem.setParam('limits/gap', 0.0001)
 
         self.variables = {}
+        self.constraints = {}
 
         if model:
             self.build_problem(model)
@@ -92,7 +93,7 @@ class SCIPSolver(Solver):
 
         expr = quicksum(self.variables[var_id] * coeff for var_id, coeff in lhs.items())
         constr = sense_map[sense](expr,rhs)
-        self.problem.addCons(constr, name=constr_id)
+        self.constraints[constr_id] = self.problem.addCons(constr, name=constr_id)
         self.constr_ids.append(constr_id)
 
     def remove_variable(self, var_id):
@@ -105,7 +106,7 @@ class SCIPSolver(Solver):
         self.check_stage()
 
         self.var_ids.remove(var_id)
-        self.problem.delVar(var_id)
+        self.problem.delVar(self.variables[var_id])
         del self.variables[var_id]
 
     def remove_variables(self, var_ids):
@@ -126,8 +127,10 @@ class SCIPSolver(Solver):
         
         self.check_stage()
 
+        #TODO: this is not working 
+        
         self.constr_ids.remove(constr_id)
-        self.problem.delCons(constr_id)
+        self.problem.delCons(self.constraints[constr_id])
         del self.constraints[constr_id]
 
     def remove_constraints(self, constr_ids):
