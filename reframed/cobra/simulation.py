@@ -70,9 +70,9 @@ def pFBA(model, objective=None, obj_frac=None, minimize=False, constraints=None,
         return pre_solution
 
     if obj_frac is None:
-        solver.add_constraint('obj', objective, '=', pre_solution.fobj)
+        solver.add_constraint('obj', objective, '=', pre_solution.fobj, update=False)
     else:
-        solver.add_constraint('obj', objective, '>', obj_frac * pre_solution.fobj)
+        solver.add_constraint('obj', objective, '>', obj_frac * pre_solution.fobj, update=False)
 
     if not reactions:
         reactions = model.reactions.keys()
@@ -102,10 +102,10 @@ def pFBA(model, objective=None, obj_frac=None, minimize=False, constraints=None,
             objective[r_id] = 1
 
     solution = solver.solve(objective, minimize=True, constraints=constraints)
-    solver.remove_constraint('obj')
     solution.pre_solution = pre_solution
 
     if cleanup:
+        solver.remove_constraint('obj')
         for r_id in reactions:
             if model.reactions[r_id].reversible:
                 pos, neg = r_id + '_p', r_id + '_n'

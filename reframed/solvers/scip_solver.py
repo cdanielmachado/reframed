@@ -39,6 +39,7 @@ class SCIPSolver(Solver):
         self.problem = Model()
         self.problem.hideOutput()
         self.problem.enableReoptimization()
+        self.updatable = True
 
 #        self.problem.setParam('limits/time', 3600)
 #        self.problem.setParam('limits/gap', 0.0001)
@@ -58,6 +59,8 @@ class SCIPSolver(Solver):
             vartype (VarType): variable type (default: CONTINUOUS)
             update (bool): update problem immediately (default: True)
         """
+
+        self.check_stage()
 
         # fix infinity
         lb = None if lb == -inf else lb
@@ -79,6 +82,8 @@ class SCIPSolver(Solver):
             update (bool): update problem immediately (default: True)
         """
 
+        self.check_stage()
+
         sense_map = {
             '=': operator.eq,
             '<': operator.le,
@@ -96,6 +101,9 @@ class SCIPSolver(Solver):
         Arguments:
             var_id (str): variable identifier
         """
+
+        self.check_stage()
+
         self.var_ids.remove(var_id)
         self.problem.delVar(var_id)
         del self.variables[var_id]
@@ -115,6 +123,9 @@ class SCIPSolver(Solver):
         Arguments:
             constr_id (str): constraint identifier
         """
+        
+        self.check_stage()
+
         self.constr_ids.remove(constr_id)
         self.problem.delCons(constr_id)
         del self.constraints[constr_id]
@@ -168,6 +179,8 @@ class SCIPSolver(Solver):
 
         """
 
+        self.check_stage()
+
         if quadratic is not None:
              raise Exception('Quadratic objective not available for SCIP.')
         
@@ -178,8 +191,9 @@ class SCIPSolver(Solver):
         
             objective = quicksum(coeff * self.variables[var_id] for var_id, coeff in linear.items() if coeff != 0)
 
-            self.problem.freeReoptSolve()
+            #TODO: this will fail to update the coefficient of variables that were added after the problem was solved the first time!
             self.problem.chgReoptObjective(objective, sense='minimize' if minimize else 'maximize')
+
 
     def build_problem(self, model):
         """ Create problem structure for a given model.
@@ -228,33 +242,35 @@ class SCIPSolver(Solver):
 
         if pool_size > 1: 
             raise Exception('Solution pool not yet implemented for SCIP wrapper.')
+                        
+        self.problem.optimize()
+        _status = self.problem.getStatus()
+        status = status_mapping.get(_status, Status.UNKNOWN)
+        message = str(_status)
+
+        self.updatable = False
+
+        _solution = self.problem.getBestSol()
+
+        if status == Status.OPTIMAL or status == Status.SUBOPTIMAL and suboptimal:
+            fobj = self.problem.getObjVal()
+            values, s_prices, r_costs = None, None, None
+
+            if get_values:
+                if isinstance(get_values, list):
+                    values = {r_id: _solution[self.variables[r_id]] for r_id in get_values}
+                else:
+                    values = {var_id: _solution[var] for var_id, var in self.variables.items()}
+
+            if shadow_prices:
+                pass #TODO: implement
+
+            if reduced_costs:
+                pass #TODO: implement
+
+            solution = Solution(Status.OPTIMAL, message, fobj, values, s_prices, r_costs)
         else:
-            self.problem.optimize()
-            _status = self.problem.getStatus()
-            status = status_mapping.get(_status, Status.UNKNOWN)
-            message = str(_status)
-
-            _solution = self.problem.getBestSol()
-
-            if status == Status.OPTIMAL or status == Status.SUBOPTIMAL and suboptimal:
-                fobj = self.problem.getObjVal()
-                values, s_prices, r_costs = None, None, None
-
-                if get_values:
-                    if isinstance(get_values, list):
-                        values = {r_id: _solution[self.variables[r_id]] for r_id in get_values}
-                    else:
-                        values = {var_id: _solution[var] for var_id, var in self.variables.items()}
-
-                if shadow_prices:
-                    pass #TODO: implement
-
-                if reduced_costs:
-                    pass #TODO: implement
-
-                solution = Solution(Status.OPTIMAL, message, fobj, values, s_prices, r_costs)
-            else:
-                solution = Solution(status, message)
+            solution = Solution(status, message)
 
         if constraints:
             try:
@@ -278,8 +294,8 @@ class SCIPSolver(Solver):
     
     def reset_bounds(self, old_bounds):
 
-#        self.problem.freeTransform()
-        self.problem.freeReoptSolve()
+        self.check_stage()
+
         for r_id, (lb, ub) in old_bounds.items():
              self.problem.chgVarLb(self.variables[r_id], lb)
              self.problem.chgVarUb(self.variables[r_id], ub)
@@ -303,3 +319,7 @@ class SCIPSolver(Solver):
 
         self.problem.hideOutput(quiet=(not enabled))
 
+    def check_stage(self):
+        if not self.updatable:
+            self.problem.freeReoptSolve()
+        self.updatable = True
