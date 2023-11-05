@@ -846,13 +846,14 @@ def save_metadata(elem, sbml_elem):
                 if not isinstance(annotations, list):
                     annotations = [annotations]
                 for annotation in annotations:
-                    cv = sb.CVTerm()
-                    cv.setQualifierType(sb.BIOLOGICAL_QUALIFIER)
-                    cv.setBiologicalQualifierType(sb.BQB_IS)
-                    annotation_string = f"{URL_IDENTIFIERS_PREFIX}/{key}/{annotation}"
-                    cv.addResource(annotation_string)
-                    sbml_elem.addCVTerm(cv)
-                    # print(elem.id, 'Added: ', annotation_string)
+                    if annotation:
+                        cv = sb.CVTerm()
+                        cv.setQualifierType(sb.BIOLOGICAL_QUALIFIER)
+                        cv.setBiologicalQualifierType(sb.BQB_IS)
+                        annotation_string = f"{URL_IDENTIFIERS_PREFIX}/{key}/{annotation}"
+                        cv.addResource(annotation_string)
+                        sbml_elem.addCVTerm(cv)
+
     if len(notes_dict):
         notes = [f'<p>{key}: {escape(value)}</p>'
                  for key, value in notes_dict.items()
@@ -862,24 +863,3 @@ def save_metadata(elem, sbml_elem):
         note_xml.getNamespaces().add('http://www.w3.org/1999/xhtml')
         sbml_elem.setNotes(note_xml)
 
-
-
-
-    # if elem.metadata:
-    #     try:
-    #         if 'XMLAnnotation' in elem.metadata:
-    #             sbml_elem.setAnnotation(elem.metadata['XMLAnnotation'])
-
-    #         if 'SBOTerm' in elem.metadata:
-    #             sbml_elem.setSBOTerm(elem.metadata['SBOTerm'])
-
-            # notes = [f'<p>{key}: {escape(value)}</p>'
-            #          for key, value in elem.metadata.items()
-            #          if key != 'XMLAnnotation']
-            # note_string = '<html>' + ''.join(notes) + '</html>'
-            # note_xml = sb.XMLNode.convertStringToXMLNode(note_string)
-            # note_xml.getNamespaces().add('http://www.w3.org/1999/xhtml')
-            # sbml_elem.setNotes(note_xml)
-
-    #     except AttributeError:
-    #         warn(f"Unable to save metadata for object {sbml_elem.getId()}")
