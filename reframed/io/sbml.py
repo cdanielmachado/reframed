@@ -51,6 +51,7 @@ DEFAULT_SBML_LEVEL = 3
 DEFAULT_SBML_VERSION = 1
 
 IDENTIFIERS_PATTERN = re.compile(r'/([^/]+)/([^/]+)$')
+URL_IDENTIFIERS_PREFIX = "https://identifiers.org"
 
 
 non_alphanum = re.compile(r'\W+')
@@ -827,23 +828,38 @@ def save_fbc_gprs(model, sbml_model):
 
 
 def save_metadata(elem, sbml_elem):
-    sbml_elem.setMetaId(elem.id)
-
+    meta_id = f"meta_{sbml_elem.getId()}"
+    sbml_elem.setMetaId(meta_id)
+    note_keys = ['CHARGE', 'FORMULA']
+    notes_dict = {}
+    
     if elem.metadata:
-        try:
-            if 'XMLAnnotation' in elem.metadata:
-                sbml_elem.setAnnotation(elem.metadata['XMLAnnotation'])
+        for key, annotations in elem.metadata.items():
+            if key == 'SBOTerm':
+                sbml_elem.setSBOTerm(annotations)
+            elif key in note_keys:
+                notes_dict[key] = annotations
+            elif key == 'XMLAnnotation':
+                continue
+            else:
+                # Assume this is an annotation
+                if not isinstance(annotations, list):
+                    annotations = [annotations]
+                for annotation in annotations:
+                    if annotation:
+                        cv = sb.CVTerm()
+                        cv.setQualifierType(sb.BIOLOGICAL_QUALIFIER)
+                        cv.setBiologicalQualifierType(sb.BQB_IS)
+                        annotation_string = f"{URL_IDENTIFIERS_PREFIX}/{key}/{annotation}"
+                        cv.addResource(annotation_string)
+                        sbml_elem.addCVTerm(cv)
 
-            if 'SBOTerm' in elem.metadata:
-                sbml_elem.setSBOTerm(elem.metadata['SBOTerm'])
+    if len(notes_dict):
+        notes = [f'<p>{key}: {escape(value)}</p>'
+                 for key, value in notes_dict.items()
+                 if key != 'XMLAnnotation']
+        note_string = '<html>' + ''.join(notes) + '</html>'
+        note_xml = sb.XMLNode.convertStringToXMLNode(note_string)
+        note_xml.getNamespaces().add('http://www.w3.org/1999/xhtml')
+        sbml_elem.setNotes(note_xml)
 
-            notes = [f'<p>{key}: {escape(value)}</p>'
-                     for key, value in elem.metadata.items()
-                     if key != 'XMLAnnotation']
-            note_string = '<html>' + ''.join(notes) + '</html>'
-            note_xml = sb.XMLNode.convertStringToXMLNode(note_string)
-            note_xml.getNamespaces().add('http://www.w3.org/1999/xhtml')
-            sbml_elem.setNotes(note_xml)
-
-        except AttributeError:
-            warn(f"Unable to save metadata for object {sbml_elem.getId()}")
