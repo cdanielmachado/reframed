@@ -1,5 +1,5 @@
 from math import inf
-from .solver import Solver, VarType#, Parameter, default_parameters
+from .solver import Solver, VarType
 from .solution import Solution, Status
 from pulp import LpProblem, LpVariable, LpConstraint, LpAffineExpression, lpSum, value, getSolver, LpSolverDefault
 from pulp.constants import *
