@@ -5,18 +5,20 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
-    reframed.cobra
-    reframed.community
-    reframed.core
-    reframed.external
-    reframed.io
-    reframed.solvers
+   reframed.alpha
+   reframed.cobra
+   reframed.community
+   reframed.core
+   reframed.external
+   reframed.io
+   reframed.solvers
 
 Module contents
 ---------------
 
 .. automodule:: reframed
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:
