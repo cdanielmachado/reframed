@@ -650,6 +650,8 @@ def save_metabolites(model, sbml_model, flavor=None):
         species.setName(metabolite.name)
         species.setCompartment(metabolite.compartment)
         species.setHasOnlySubstanceUnits(True)
+        species.setConstant(False)
+        species.setBoundaryCondition(model.compartments[metabolite.compartment].external)
 
         if flavor in {Flavor.BIGG.value, Flavor.FBC2.value}:
             fbc_species = species.getPlugin('fbc')
