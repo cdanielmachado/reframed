@@ -79,7 +79,7 @@ class GPRAssociation(object):
     def remove_gene(self, gene_id):
         for protein in self.proteins:
             if gene_id in protein.genes:
-                del protein.genes[gene_id]
+                protein.genes.remove(gene_id)
 
         self.proteins = [protein for protein in self.proteins if len(protein.genes) > 0]
 
