@@ -107,6 +107,7 @@ def simplify(model, reactions=None, constraints=None, clean_compartments=True, i
 
     model.remove_reactions(blocked_reactions(model, reactions=reactions, constraints=constraints))
     model.remove_metabolites(disconnected_metabolites(model), safe_delete=False)
+    model.update()
     model.remove_genes(disconnected_genes(model))
     if clean_compartments:
         model.remove_compartments(empty_compartments(model))
