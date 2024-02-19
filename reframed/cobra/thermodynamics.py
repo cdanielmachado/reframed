@@ -4,7 +4,7 @@ from ..solvers.solver import VarType
 from ..solvers.solution import Status
 import numpy as np
 from scipy.linalg import svd
-from scipy import compress
+from numpy import compress
 from math import sqrt, inf
 
 from warnings import warn
