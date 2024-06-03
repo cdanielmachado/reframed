@@ -107,9 +107,9 @@ class CommunitySolution(object):
             if total_out > total_in:
                 r_in[None] = total_out - total_in
 
-            weight = molecular_weight(self.community.merged_model.metabolites[m_id].metadata.get('FORMULA', ''))
+            weight = molecular_weight(self.community.merged_model.metabolites[m_id].metadata.get('FORMULA', '')) * 0.001
 
-            cross = [(o1, o2, m_id, r1 * r2 / total, r1 * r2 * weight / total / 1000) for o1, r1 in r_out.items() for o2, r2 in r_in.items()]
+            cross = [(o1, o2, m_id, r1 * r2 / total, r1 * r2 * weight / total) for o1, r1 in r_out.items() for o2, r2 in r_in.items()]
 
             cross_all.extend(cross)
 
