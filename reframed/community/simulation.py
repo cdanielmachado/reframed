@@ -4,9 +4,10 @@ from math import inf, isinf
 from .solution import CommunitySolution
 from ..solvers.solution import Status
 from numpy.random import lognormal
+from ..core.elements import molecular_weight
 
 
-def build_problem(community, growth=0.1, abundance=None):
+def build_problem(community, growth=0.1, abundance=None, constraints=None):
 
     bigM = 1000
     solver = solver_instance()
@@ -80,10 +81,37 @@ def build_problem(community, growth=0.1, abundance=None):
 
     solver.update()
 
+
+    # if growth is fixed add variables for minimizing uptake fluxes
+    # assumes exchange reactions with default direction
+
+    if growth is not None:
+
+        solver.uptake_vars = {}
+
+        for r_id in model.get_exchange_reactions():
+            uptake_in_model = model.reactions[r_id].lb < 0 or model.reactions[r_id].lb is None
+            uptake_override = constraints is not None and r_id in constraints and (constraints[r_id] < 0 or constraints[r_id] is None)
+
+            if uptake_in_model or uptake_override:
+                m_id = model.reactions[r_id].get_substrates()[0]
+                new_id = f'uptake_{m_id}'
+                solver.add_variable(new_id, 0, inf, update=False)
+                solver.uptake_vars[m_id] = (r_id, new_id)
+
+        solver.update()
+
+
+        for r_id, new_id in solver.uptake_vars.values():
+            solver.add_constraint(f"min_{r_id}", {r_id: 1, new_id: 1}, '>', 0, update=False)
+
+        solver.update()
+
+
     return solver
 
 
-def simulate(community, objective=None, growth=0.1, abundance=None, allocation=False, constraints=None,
+def SteadierCom(community, objective=None, growth=0.1, abundance=None, allocation=False, constraints=None,
              w_e=0.001, w_r=0.5, solver=None):
 
     if abundance:
@@ -91,15 +119,23 @@ def simulate(community, objective=None, growth=0.1, abundance=None, allocation=F
         abundance = {org_id: abundance.get(org_id, 0) / norm for org_id in community.organisms}
 
     if not solver:
-        solver = build_problem(community, growth=growth, abundance=abundance)
+        solver = build_problem(community, growth=growth, abundance=abundance, constraints=constraints)
 
     if allocation:
         _ = allocation_constraints(community, solver, w_e=w_e, w_r=w_r, abundance=abundance)
 
-    if not objective:
-        objective = community.merged_model.biomass_reaction
+    minimize = False
 
-    sol = solver.solve(objective, minimize=False, constraints=constraints)
+    if not objective:
+        if growth is None:
+            objective = community.merged_model.biomass_reaction
+        else:
+            objective = {}
+            minimize = True
+            for m_id, (_, new_id) in solver.uptake_vars.items():
+                objective[new_id] = molecular_weight(community.merged_model.metabolites[m_id].metadata.get('FORMULA', ''))
+
+    sol = solver.solve(objective, minimize=minimize, constraints=constraints)
 
     if sol.status == Status.OPTIMAL:
         sol = CommunitySolution(community, sol.values)
@@ -118,21 +154,28 @@ def sample(community, n=100, growth=0.1, abundance=None, allocation=False, const
         solver = build_problem(community, growth=growth, abundance=abundance)
 
     if not allocation:
-        w_e = 0
-        w_r = 0
+        w_e, w_r = 0, 0
 
-    enz_vars = allocation_constraints(community, solver, w_e=w_e, w_r=w_r, abundance=abundance)
+    random_vars = allocation_constraints(community, solver, w_e=w_e, w_r=w_r, abundance=abundance)
 
     sols = []
     if abundance:
         w1 = {org_id: 1 / abundance[org_id] if abundance[org_id] > 0 else 0 for org_id in community.organisms}
+
+    if not growth:
+        objective = community.merged_model.biomass_reaction
+        sol = solver.solve(objective, minimize=False, constraints=constraints)
+        if constraints is None:
+            constraints = {community.merged_model.biomass_reaction: (sol.fobj, inf)} 
+        else:
+            constraints[community.merged_model.biomass_reaction] = (sol.fobj, inf)
 
     for _ in range(n):
 
         if not abundance:
             w1 = {org_id: lognormal(0, 1) for org_id in community.organisms}
 
-        objective = {vi: w1[org_id] * lognormal(0, 1) for org_id, v_org in enz_vars.items() for vi in v_org}
+        objective = {vi: w1[org_id] * lognormal(0, 1) for org_id, v_org in random_vars.items() for vi in v_org}
 
         sol = solver.solve(objective, minimize=True, constraints=constraints)
 

@@ -107,12 +107,15 @@ class CommunitySolution(object):
             if total_out > total_in:
                 r_in[None] = total_out - total_in
 
-            cross = [(o1, o2, m_id, r1 * r2 / total) for o1, r1 in r_out.items() for o2, r2 in r_in.items()]
+            weight = molecular_weight(self.community.merged_model.metabolites[m_id].metadata.get('FORMULA', ''))
+
+            cross = [(o1, o2, m_id, r1 * r2 / total, r1 * r2 * weight / total / 1000) for o1, r1 in r_out.items() for o2, r2 in r_in.items()]
+
             cross_all.extend(cross)
 
         if as_df:
             from pandas import DataFrame
-            cross_all = DataFrame(cross_all, columns=["donor", "receiver", "compound", "rate"])
+            cross_all = DataFrame(cross_all, columns=["donor", "receiver", "compound", "rate", "rate_mass"])
 
         return cross_all
 
