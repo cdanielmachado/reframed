@@ -115,7 +115,7 @@ class CommunitySolution(object):
 
         if as_df:
             from pandas import DataFrame
-            cross_all = DataFrame(cross_all, columns=["donor", "receiver", "compound", "rate", "rate_mass"])
+            cross_all = DataFrame(cross_all, columns=["donor", "receiver", "compound", "rate", "mass_rate"])
 
         return cross_all
 
