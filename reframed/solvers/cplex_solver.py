@@ -109,7 +109,7 @@ class CplexSolver(Solver):
         if minimize != self.minimize:
             sense = self.problem.objective.sense.minimize if minimize else self.problem.objective.sense.maximize
             self.problem.objective.set_sense(sense)
-            self.sense = minimize
+            self.minimize = minimize
 
 
     def internal_solve(self):
