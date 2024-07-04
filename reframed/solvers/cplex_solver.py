@@ -90,8 +90,6 @@ class CplexSolver(Solver):
 
     def set_objective(self, objective, minimize=True):
 
-        self.update()
-
         if isinstance(objective, str):
             objective = {objective: 1.0}
 
