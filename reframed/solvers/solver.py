@@ -22,12 +22,6 @@ class Parameter(Enum):
     POOL_GAP = 7
 
 
-default_parameters = {
-    Parameter.FEASIBILITY_TOL: 1e-9,
-    Parameter.OPTIMALITY_TOL: 1e-9,
-}
-
-
 class Solver(object):
     """ Abstract class representing a generic solver.
 
@@ -37,8 +31,10 @@ class Solver(object):
     def __init__(self, model=None):
         self.problem = None
         self.model = model
-        self.variables = {}
-        self.constraints = {}
+        self.variables = []
+        self.constraints = []
+        self.objective = {}
+        self.minimize = True
         self._cached_vars = {}
         self._cached_constrs = {}
 
@@ -72,7 +68,6 @@ class Solver(object):
 
     def add_constraints(self, constr_dict):
         """ Solver specific implementation """
-        pass
 
     def update(self):
         """ Update internal structure. Used for efficient lazy updating. """
@@ -121,16 +116,18 @@ class Solver(object):
 
         if model:
             self.build_problem(model)
+        else:
+            self.update()
 
         self.set_objective(objective, minimize)
 
         if constraints:
-            old_bounds = self.set_bounds(constraints)
+            old_bounds = self.set_temporary_bounds(constraints)
 
         status = self.internal_solve()
 
         if status == Status.OPTIMAL:
-            solution = self.get_solution(get_values, shadow_prices, reduced_costs)
+            solution = self.get_solution(status, get_values, shadow_prices, reduced_costs)
         else:
             solution = Solution(status)
 
@@ -139,7 +136,7 @@ class Solver(object):
 
         return solution
 
-    def set_objective(self, objective, minimize=False):
+    def set_objective(self, objective, minimize=True):
         """ Set a predefined objective for this problem.
 
         Args:
@@ -150,7 +147,7 @@ class Solver(object):
         pass
 
 
-    def set_bounds(self, bounds):
+    def set_temporary_bounds(self, bounds):
         pass
 
     def reset_bounds(self, bounds):
@@ -159,7 +156,7 @@ class Solver(object):
     def internal_solve(self):
         pass
 
-    def get_solution(self, get_values=True, shadow_prices=False, reduced_costs=False):
+    def get_solution(self, status, get_values=True, shadow_prices=False, reduced_costs=False):
         pass
 
     def set_parameter(self, parameter, value):
