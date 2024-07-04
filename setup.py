@@ -17,15 +17,14 @@ test_requirements = requirements + ['cplex']
 setup(
     author="Daniel Machado",
     author_email='cdanielmachado@gmail.com',
-    python_requires='>=3.6',
+    python_requires='>=3.8',
     classifiers=[
         'License :: OSI Approved :: Apache Software License',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
     ],
     description="metabolic modeling package",
     install_requires=requirements,
@@ -39,6 +38,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/cdanielmachado/reframed',
-    version='1.5.1',
+    version='1.5.2',
     zip_safe=False,
 )

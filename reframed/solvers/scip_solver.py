@@ -40,10 +40,6 @@ class SCIPSolver(Solver):
         self.problem.hideOutput()
         self.problem.enableReoptimization()
         self.updatable = True
-
-#        self.problem.setParam('limits/time', 3600)
-#        self.problem.setParam('limits/gap', 0.0001)
-
         self.variables = {}
         self.constraints = {}
 
