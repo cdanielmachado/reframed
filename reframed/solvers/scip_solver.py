@@ -1,3 +1,4 @@
+from enum import Enum
 from math import inf
 import operator
 from .solver import Solver, VarType, Parameter
@@ -47,6 +48,23 @@ sense_mapping = {
     '>': operator.ge,
 }
 
+class Stage(Enum):
+    INIT         =  0        # SCIP data structures are initialized, no problem exists */
+    PROBLEM      =  1        # the problem is being created and modified */
+    TRANSFORMING =  2        # the problem is being transformed into solving data space */
+    TRANSFORMED  =  3        # the problem was transformed into solving data space */
+    INITPRESOLVE =  4        # presolving is initialized */
+    PRESOLVING   =  5        # the problem is being presolved */
+    EXITPRESOLVE =  6        # presolving is exited */
+    PRESOLVED    =  7        # the problem was presolved */
+    INITSOLVE    =  8        # the solving process data is being initialized */
+    SOLVING      =  9        # the problem is being solved */
+    SOLVED       = 10        # the problem was solved */
+    EXITSOLVE    = 11        # the solving process data is being freed */
+    FREETRANS    = 12        # the transformed problem is being freed */
+    FREE         = 13 
+
+
 class SCIPSolver(Solver):
     """ Implements the solver interface using SCIP. """
 
@@ -55,7 +73,6 @@ class SCIPSolver(Solver):
         self.problem = Model()
         self.problem.hideOutput()
         self.problem.enableReoptimization()
-        self.updatable = True
         self._vars_dict = {}
         self._cons_dict = {}
 
@@ -85,7 +102,8 @@ class SCIPSolver(Solver):
 
     def set_objective(self, objective, minimize=True):
         
-        self.check_stage()
+        if self.problem.getStage() > Stage.PROBLEM.value:
+            self.problem.freeReoptSolve()
 
         if isinstance(objective, str):
             objective = {objective: 1.0}
@@ -93,6 +111,7 @@ class SCIPSolver(Solver):
         objective = quicksum(coeff * self._vars_dict[var_id] for var_id, coeff in objective.items() if coeff != 0)
 
         #TODO: this will fail to update the coefficient of variables that were added after the problem was solved the first time!
+        # this is an issue for methods like pFBA
         self.problem.chgReoptObjective(objective, sense='minimize' if minimize else 'maximize')
 
         self.objective = objective
@@ -103,7 +122,6 @@ class SCIPSolver(Solver):
         
         self.problem.optimize()
         status = self.problem.getStatus()
-        self.updatable = False
         return status_mapping.get(status, Status.UNKNOWN)
 
 
@@ -136,7 +154,8 @@ class SCIPSolver(Solver):
     
     def set_temporary_bounds(self, constraints):
 
-        self.check_stage()
+        if self.problem.getStage() > Stage.PROBLEM.value:
+            raise Exception('This wont work with SCIP.')
 
         old_bounds = {}
 
@@ -151,7 +170,9 @@ class SCIPSolver(Solver):
 
     def reset_bounds(self, old_bounds):
 
-        self.check_stage()
+        if self.problem.getStage() > Stage.PRESOLVED:
+            print('reset_bounds')
+            self.problem.freeReoptSolve()
 
         for r_id, (lb, ub) in old_bounds.items():
              self.problem.chgVarLb(self._vars_dict[r_id], lb)
@@ -191,26 +212,6 @@ class SCIPSolver(Solver):
 
         self.problem.hideOutput(quiet=(not enabled))
 
-    def check_stage(self):
-        if not self.updatable:
-            self.problem.freeReoptSolve()
-        self.updatable = True
 
     def print_stage(self):
-        stages = [
-            'INIT', 
-            'PROBLEM', 
-            'TRANSFORMING', 
-            'TRANSFORMED', 
-            'INITPRESOLVE', 
-            'PRESOLVING', 
-            'EXITPRESOLVE', 
-            'PRESOLVED', 
-            'INITSOLVE', 
-            'SOLVING', 
-            'SOLVED', 
-            'EXITSOLVE', 
-            'FREETRANS', 
-            'FREE', 
-        ]
-        print('Current stage:', stages[self.problem.getStage()])
+        print('Current stage:', Stage(self.problem.getStage()).name)
