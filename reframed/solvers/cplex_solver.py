@@ -138,9 +138,8 @@ class CplexSolver(Solver):
         else:
             r_costs = None
 
-        solution = Solution(status, fobj=fobj, values=values, shadow_prices=s_prices, reduced_costs=r_costs)
+        return Solution(status, fobj=fobj, values=values, shadow_prices=s_prices, reduced_costs=r_costs)
 
-        return solution
 
     def set_temporary_bounds(self, constraints):
 

@@ -38,6 +38,13 @@ parameter_mapping = {
     Parameter.POOL_GAP: GRB.Param.PoolGap
 }
 
+sense_mapping = {
+    '=': GRB.EQUAL, 
+    '<': GRB.LESS_EQUAL, 
+    '>': GRB.GREATER_EQUAL
+}
+
+
 
 class GurobiSolver(Solver):
     """ Implements the gurobi solver interface. """
@@ -61,9 +68,8 @@ class GurobiSolver(Solver):
     def add_constraints(self, constr_dict):
 
         for constr_id, (lhs, sense, rhs) in constr_dict.items():
-            map_sense = {'=': GRB.EQUAL, '<': GRB.LESS_EQUAL, '>': GRB.GREATER_EQUAL}
             expr = quicksum(coeff * self.problem.getVarByName(r_id) for r_id, coeff in lhs.items() if coeff)
-            self.problem.addConstr(expr, map_sense[sense], rhs, constr_id)
+            self.problem.addConstr(expr, sense_mapping[sense], rhs, constr_id)
         
         self.constraints.extend(constr_dict.keys())
         self.problem.update()
@@ -109,9 +115,7 @@ class GurobiSolver(Solver):
         else:
             r_costs = None
 
-        solution = Solution(status, fobj=fobj, values=values, shadow_prices=s_prices, reduced_costs=r_costs)
-
-        return solution
+        return Solution(status, fobj=fobj, values=values, shadow_prices=s_prices, reduced_costs=r_costs)
     
 
 

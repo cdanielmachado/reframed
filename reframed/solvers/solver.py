@@ -98,7 +98,8 @@ class Solver(object):
 
         self.update()
 
-    def solve(self, objective=None, minimize=True, model=None, constraints=None, get_values=True, shadow_prices=False, reduced_costs=False):
+    def solve(self, objective=None, minimize=True, model=None, constraints=None, get_values=True, shadow_prices=False, reduced_costs=False,
+              allow_suboptimal=False):
         """ Solve the optimization problem.
 
         Arguments:
@@ -109,6 +110,7 @@ class Solver(object):
             get_values (bool or list): set to false for speedup if you only care about the objective value (default: True)
             shadow_prices (bool): return shadow prices if available (default: False)
             reduced_costs (bool): return reduced costs if available (default: False)
+            allow_suboptimal (bool): return suboptimal solution if found (default: False)
 
         Returns:
             Solution: solution
@@ -119,14 +121,15 @@ class Solver(object):
         else:
             self.update()
 
-        self.set_objective(objective, minimize)
+        if objective is not None:
+            self.set_objective(objective, minimize)
 
         if constraints:
             old_bounds = self.set_temporary_bounds(constraints)
 
         status = self.internal_solve()
 
-        if status == Status.OPTIMAL:
+        if status == Status.OPTIMAL or status == Status.SUBOPTIMAL and allow_suboptimal:
             solution = self.get_solution(status, get_values, shadow_prices, reduced_costs)
         else:
             solution = Solution(status)
