@@ -72,7 +72,6 @@ class SCIPSolver(Solver):
         Solver.__init__(self)
         self.problem = Model()
         self.problem.hideOutput()
-        self.problem.enableReoptimization()
         self._vars_dict = {}
         self._cons_dict = {}
 
@@ -101,18 +100,16 @@ class SCIPSolver(Solver):
  
 
     def set_objective(self, objective, minimize=True):
-        
-        if self.problem.getStage() > Stage.PROBLEM.value:
-            self.problem.freeReoptSolve()
+
+        if self.problem.getStage() > Stage.PRESOLVED.value:
+            self.problem.freeTransform()
 
         if isinstance(objective, str):
             objective = {objective: 1.0}
         
         objective = quicksum(coeff * self._vars_dict[var_id] for var_id, coeff in objective.items() if coeff != 0)
 
-        #TODO: this will fail to update the coefficient of variables that were added after the problem was solved the first time!
-        # this is an issue for methods like pFBA
-        self.problem.chgReoptObjective(objective, sense='minimize' if minimize else 'maximize')
+        self.problem.setObjective(objective, sense='minimize' if minimize else 'maximize')
 
         self.objective = objective
         self.minimize = minimize
@@ -154,9 +151,6 @@ class SCIPSolver(Solver):
     
     def set_temporary_bounds(self, constraints):
 
-        if self.problem.getStage() > Stage.PROBLEM.value:
-            raise Exception('This wont work with SCIP.')
-
         old_bounds = {}
 
         for r_id, x in constraints.items():
@@ -170,9 +164,8 @@ class SCIPSolver(Solver):
 
     def reset_bounds(self, old_bounds):
 
-        if self.problem.getStage() > Stage.PRESOLVED:
-            print('reset_bounds')
-            self.problem.freeReoptSolve()
+        if self.problem.getStage() > Stage.PRESOLVED.value:
+            self.problem.freeTransform()
 
         for r_id, (lb, ub) in old_bounds.items():
              self.problem.chgVarLb(self._vars_dict[r_id], lb)
