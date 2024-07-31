@@ -8,7 +8,7 @@ from setuptools import setup, find_packages
 with open('README.rst') as readme_file:
     readme = readme_file.read()
 
-requirements = ['numpy', 'scipy', 'sympy', 'python-libsbml']
+requirements = ['numpy', 'scipy', 'sympy', 'python-libsbml', 'pyscipopt']
 
 setup_requirements = []
 
@@ -38,6 +38,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/cdanielmachado/reframed',
-    version='1.5.2',
+    version='1.5.3',
     zip_safe=False,
 )
