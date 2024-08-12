@@ -6,22 +6,22 @@ from math import inf
 class ReactionParser(object):
 
     def __init__(self):
-        id_re = '[a-zA-Z]\w*'
-        pos_float_re = '\d+(?:\.\d+)?(?:e[+-]?\d+)?'
-        float_re = '-?\d+(?:\.\d+)?(?:e[+-]?\d+)?'
+        id_re = r'[a-zA-Z]\w*'
+        pos_float_re = r'\d+(?:\.\d+)?(?:e[+-]?\d+)?'
+        float_re = r'-?\d+(?:\.\d+)?(?:e[+-]?\d+)?'
 
-        compound = '(?:' + pos_float_re + '\s+)?' + id_re
-        expression = compound + '(?:\s*\+\s*' + compound + ')*'
-        bounds = '\[\s*(?P<lb>' + float_re + ')?\s*,\s*(?P<ub>' + float_re + ')?\s*\]'
-        objective = '@' + float_re
-        reaction = '^(?P<reaction_id>' + id_re + ')\s*:' + \
-                   '\s*(?P<substrates>' + expression + ')?' + \
-                   '\s*(?P<direction>-->|<->)' + \
-                   '\s*(?P<products>' + expression + ')?' + \
-                   '\s*(?P<bounds>' + bounds + ')?' + \
-                   '\s*(?P<objective>' + objective + ')?$'
+        compound = r'(?:' + pos_float_re + r'\s+)?' + id_re
+        expression = compound + r'(?:\s*\+\s*' + compound + r')*'
+        bounds = r'\[\s*(?P<lb>' + float_re + r')?\s*,\s*(?P<ub>' + float_re + r')?\s*\]'
+        objective = r'@' + float_re
+        reaction = r'^(?P<reaction_id>' + id_re + r')\s*:' + \
+                   r'\s*(?P<substrates>' + expression + r')?' + \
+                   r'\s*(?P<direction>-->|<->)' + \
+                   r'\s*(?P<products>' + expression + r')?' + \
+                   r'\s*(?P<bounds>' + bounds + r')?' + \
+                   r'\s*(?P<objective>' + objective + r')?$'
 
-        self.regex_compound = compile('(?P<coeff>' + pos_float_re + '\s+)?(?P<met_id>' + id_re + ')')
+        self.regex_compound = compile(r'(?P<coeff>' + pos_float_re + r'\s+)?(?P<met_id>' + id_re + r')')
         self.regex_bounds = compile(bounds)
         self.regex_reaction = compile(reaction)
 
