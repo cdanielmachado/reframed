@@ -70,9 +70,9 @@ def pFBA(model, objective=None, obj_frac=None, minimize=False, constraints=None,
         return pre_solution
 
     if obj_frac is None:
-        solver.add_constraint('obj', objective, '=', pre_solution.fobj, update=False)
+        solver.add_constraint('obj', objective, '=', pre_solution.fobj)
     else:
-        solver.add_constraint('obj', objective, '>', obj_frac * pre_solution.fobj, update=False)
+        solver.add_constraint('obj', objective, '>', obj_frac * pre_solution.fobj)
 
     if not reactions:
         reactions = model.reactions.keys()
@@ -82,15 +82,15 @@ def pFBA(model, objective=None, obj_frac=None, minimize=False, constraints=None,
         for r_id in reactions:
             if model.reactions[r_id].reversible:
                 pos, neg = r_id + '_p', r_id + '_n'
-                solver.add_variable(pos, 0, inf, update=False)
-                solver.add_variable(neg, 0, inf,  update=False)
-        solver.update()
+                solver.add_variable(pos, 0, inf)
+                solver.add_variable(neg, 0, inf)
+        #solver.update()
         for r_id in reactions:
             if model.reactions[r_id].reversible:
                 pos, neg = r_id + '_p', r_id + '_n'
-                solver.add_constraint('c' + pos, {r_id: -1, pos: 1}, '>', 0, update=False)
-                solver.add_constraint('c' + neg, {r_id: 1, neg: 1}, '>', 0, update=False)
-        solver.update()
+                solver.add_constraint('c' + pos, {r_id: -1, pos: 1}, '>', 0)
+                solver.add_constraint('c' + neg, {r_id: 1, neg: 1}, '>', 0)
+        #solver.update()
 
     objective = dict()
     for r_id in reactions:
@@ -100,6 +100,8 @@ def pFBA(model, objective=None, obj_frac=None, minimize=False, constraints=None,
             objective[neg] = 1
         else:
             objective[r_id] = 1
+    
+    solver.update()
 
     solution = solver.solve(objective, minimize=True, constraints=constraints)
     solution.pre_solution = pre_solution
@@ -195,8 +197,8 @@ def CAFBA(model, objective=None, minimize=False, wc=0, we=8.3e-4, wr=0.169, pmax
             if carbon_source in model.reactions[r_id].stoichiometry:
                 if model.reactions[r_id].reversible:
                     pos, neg = r_id + '+', r_id + '-'
-                    solver.add_variable(pos, 0, inf, update=False)
-                    solver.add_variable(neg, 0, inf, update=False)
+                    solver.add_variable(pos, 0, inf)
+                    solver.add_variable(neg, 0, inf)
                     uptake.append(r_id + '+')
                     uptake.append(r_id + '-')
                     splits[r_id] = pos, neg
@@ -206,8 +208,8 @@ def CAFBA(model, objective=None, minimize=False, wc=0, we=8.3e-4, wr=0.169, pmax
         for r_id in model.get_reactions_by_type(ReactionType.ENZYMATIC):
             if model.reactions[r_id].reversible:
                 pos, neg = r_id + '+', r_id + '-'
-                solver.add_variable(pos, 0, inf, update=False)
-                solver.add_variable(neg, 0, inf, update=False)
+                solver.add_variable(pos, 0, inf)
+                solver.add_variable(neg, 0, inf)
                 enzymatic.append(r_id + '+')
                 enzymatic.append(r_id + '-')
                 splits[r_id] = pos, neg
@@ -217,8 +219,8 @@ def CAFBA(model, objective=None, minimize=False, wc=0, we=8.3e-4, wr=0.169, pmax
         solver.update()
 
         for r_id, (pos, neg) in splits.items():
-            solver.add_constraint('c' + pos, {r_id: -1, pos: 1}, '>', 0, update=False)
-            solver.add_constraint('c' + neg, {r_id: 1, neg: 1}, '>', 0, update=False)
+            solver.add_constraint('c' + pos, {r_id: -1, pos: 1}, '>', 0)
+            solver.add_constraint('c' + neg, {r_id: 1, neg: 1}, '>', 0)
         solver.update()
 
     main_constr = {}
@@ -228,10 +230,11 @@ def CAFBA(model, objective=None, minimize=False, wc=0, we=8.3e-4, wr=0.169, pmax
         main_constr[r_id] = wc
     main_constr[model.biomass_reaction] = wr
 
-    solver.add_constraint('alloc', main_constr, '=', pmax, update=True)
-
+    solver.add_constraint('alloc', main_constr, '=', pmax)
+    solver.update()
+    
     solution = solver.solve(objective, minimize=minimize, constraints=constraints)
-
+    
     solver.remove_constraint('alloc')
 
     if cleanup:
@@ -308,13 +311,13 @@ def lMOMA(model, reference=None, constraints=None, reactions=None, solver=None):
         solver.lMOMA_flag = True
         for r_id in reactions:
             d_pos, d_neg = r_id + '_d+', r_id + '_d-'
-            solver.add_variable(d_pos, 0, inf, update=False)
-            solver.add_variable(d_neg, 0, inf, update=False)
+            solver.add_variable(d_pos, 0, inf)
+            solver.add_variable(d_neg, 0, inf)
         solver.update()
         for r_id in reactions:
             d_pos, d_neg = r_id + '_d+', r_id + '_d-'
-            solver.add_constraint('c' + d_pos, {r_id: -1, d_pos: 1}, '>', -reference[r_id], update=False)
-            solver.add_constraint('c' + d_neg, {r_id: 1, d_neg: 1}, '>', reference[r_id], update=False)
+            solver.add_constraint('c' + d_pos, {r_id: -1, d_pos: 1}, '>', -reference[r_id])
+            solver.add_constraint('c' + d_neg, {r_id: 1, d_neg: 1}, '>', reference[r_id])
         solver.update()
 
     objective = dict()
@@ -370,7 +373,7 @@ def ROOM(model, reference=None, constraints=None, wt_constraints=None, reactions
 
         for r_id in reactions:
             y_i = 'y_' + r_id
-            solver.add_variable(y_i, 0, 1, vartype=VarType.BINARY, update=False)
+            solver.add_variable(y_i, 0, 1, vartype=VarType.BINARY)
             objective[y_i] = 1
         solver.update()
 
@@ -384,8 +387,8 @@ def ROOM(model, reference=None, constraints=None, wt_constraints=None, reactions
                 w_i_max = reference[r_id]
             w_u = w_i_max + delta * abs(w_i_max) + epsilon
             w_l = w_i_min - delta * abs(w_i_min) - epsilon
-            solver.add_constraint('c' + r_id + '_u', {r_id: 1, y_i: (w_u - U)}, '<', w_u, update=False)
-            solver.add_constraint('c' + r_id + '_l', {r_id: 1, y_i: (w_l - L)}, '>', w_l, update=False)
+            solver.add_constraint('c' + r_id + '_u', {r_id: 1, y_i: (w_u - U)}, '<', w_u)
+            solver.add_constraint('c' + r_id + '_l', {r_id: 1, y_i: (w_l - L)}, '>', w_l)
         solver.update()
 
     if solutions == 1:

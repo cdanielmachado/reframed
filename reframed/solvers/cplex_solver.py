@@ -77,7 +77,6 @@ class CplexSolver(Solver):
 
     def add_constraints(self, constr_dict):
 
-
         constr_ids = list(constr_dict.keys())
         lhs_all = [SparsePair(ind=list(lhs.keys()), val=list(lhs.values())) for (lhs, _, _) in constr_dict.values()]
         map_sense = {'=': 'E', '<': 'L', '>': 'G'}
@@ -87,7 +86,28 @@ class CplexSolver(Solver):
         self.problem.linear_constraints.add(lin_expr=lhs_all, senses=sense_all, rhs=rhs_all, names=constr_ids)
         self.constraints.extend(constr_ids)
 
+    def remove_constraint(self, constr_id):
+        """ Remove a constraint from the current problem.
 
+        Arguments:
+            constr_id (str): constraint identifier
+        """
+        if constr_id in self.constraints:
+            self.problem.linear_constraints.delete(constr_id)
+            self.constraints.remove(constr_id)
+
+    def update(self):
+        """ Update internal structure. Used for efficient lazy updating. """
+        
+        if len(self._cached_vars) > 0:
+            self.add_variables(self._cached_vars)
+            self._cached_vars = {}
+
+        if len(self._cached_constrs) > 0: 
+            self.add_constraints(self._cached_constrs)
+            self._cached_constrs = {}
+
+    
     def set_objective(self, objective, minimize=True):
 
         if isinstance(objective, str):

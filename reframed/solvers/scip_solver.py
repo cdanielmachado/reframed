@@ -97,7 +97,34 @@ class SCIPSolver(Solver):
             self._cons_dict[constr_id] = self.problem.addCons(constr, name=constr_id)
 
         self.constraints.extend(constr_dict.keys())
- 
+
+    def remove_constraint(self, constr_id):
+        """ Remove a constraint from the current problem.
+
+        Arguments:
+            constr_id (str): constraint identifier
+        """
+
+        if constr_id in self.constraints:
+            self.problem.freeTransform()
+            self.problem.delCons(self._cons_dict[constr_id])
+            del self._cons_dict[constr_id]
+            self.constraints.remove(constr_id)
+
+
+    def update(self):
+        """ Update internal structure. Used for efficient lazy updating. """
+        
+        self.problem.freeTransform()
+
+        if len(self._cached_vars) > 0:
+            self.add_variables(self._cached_vars)
+            self._cached_vars = {}
+
+        if len(self._cached_constrs) > 0: 
+            self.add_constraints(self._cached_constrs)
+            self._cached_constrs = {}
+
 
     def set_objective(self, objective, minimize=True):
 
