@@ -80,6 +80,7 @@ class SCIPSolver(Solver):
 
     def add_variables(self, var_dict):
 
+        self.problem.freeTransform()
         for var_id, (lb, ub, vartype) in var_dict.items():
 
             lb = None if lb == -inf else lb
@@ -90,7 +91,8 @@ class SCIPSolver(Solver):
         self.variables.extend(var_dict.keys())
 
     def add_constraints(self, constr_dict):
-
+        
+        self.problem.freeTransform()
         for constr_id, (lhs, sense, rhs) in constr_dict.items():
             expr = quicksum(self._vars_dict[var_id] * coeff for var_id, coeff in lhs.items())
             constr = sense_mapping[sense](expr,rhs)
@@ -110,20 +112,6 @@ class SCIPSolver(Solver):
             self.problem.delCons(self._cons_dict[constr_id])
             del self._cons_dict[constr_id]
             self.constraints.remove(constr_id)
-
-
-    def update(self):
-        """ Update internal structure. Used for efficient lazy updating. """
-        
-        self.problem.freeTransform()
-
-        if len(self._cached_vars) > 0:
-            self.add_variables(self._cached_vars)
-            self._cached_vars = {}
-
-        if len(self._cached_constrs) > 0: 
-            self.add_constraints(self._cached_constrs)
-            self._cached_constrs = {}
 
 
     def set_objective(self, objective, minimize=True):

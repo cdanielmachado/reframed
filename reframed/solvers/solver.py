@@ -75,7 +75,15 @@ class Solver(object):
         pass
 
     def update(self):
-        pass
+        """ Update internal structure. Used for efficient lazy updating. """
+        
+        if len(self._cached_vars) > 0:
+            self.add_variables(self._cached_vars)
+            self._cached_vars = {}
+
+        if len(self._cached_constrs) > 0: 
+            self.add_constraints(self._cached_constrs)
+            self._cached_constrs = {}
 
     def build_problem(self, model):
         """ Create problem structure for a given model.

@@ -96,17 +96,6 @@ class CplexSolver(Solver):
             self.problem.linear_constraints.delete(constr_id)
             self.constraints.remove(constr_id)
 
-    def update(self):
-        """ Update internal structure. Used for efficient lazy updating. """
-        
-        if len(self._cached_vars) > 0:
-            self.add_variables(self._cached_vars)
-            self._cached_vars = {}
-
-        if len(self._cached_constrs) > 0: 
-            self.add_constraints(self._cached_constrs)
-            self._cached_constrs = {}
-
     
     def set_objective(self, objective, minimize=True):
 
