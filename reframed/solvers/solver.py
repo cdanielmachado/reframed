@@ -68,6 +68,11 @@ class Solver(object):
 
     def add_constraints(self, constr_dict):
         """ Solver specific implementation """
+        pass
+
+    def remove_constraint(self, constr_id):
+        """ Solver specific implementation """
+        pass
 
     def update(self):
         """ Update internal structure. Used for efficient lazy updating. """
@@ -79,7 +84,6 @@ class Solver(object):
         if len(self._cached_constrs) > 0: 
             self.add_constraints(self._cached_constrs)
             self._cached_constrs = {}
-
 
     def build_problem(self, model):
         """ Create problem structure for a given model.

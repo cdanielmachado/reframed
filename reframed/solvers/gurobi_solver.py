@@ -74,6 +74,17 @@ class GurobiSolver(Solver):
         self.constraints.extend(constr_dict.keys())
         self.problem.update()
 
+    def remove_constraint(self, constr_id):
+        """ Remove a constraint from the current problem.
+
+        Arguments:
+            constr_id (str): constraint identifier
+        """
+
+        if constr_id in self.constraints:
+            self.problem.remove(self.problem.getConstrByName(constr_id))
+            self.constraints.remove(constr_id)
+
 
     def set_objective(self, objective, minimize=True):
 

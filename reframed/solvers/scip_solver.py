@@ -80,6 +80,7 @@ class SCIPSolver(Solver):
 
     def add_variables(self, var_dict):
 
+        self.problem.freeTransform()
         for var_id, (lb, ub, vartype) in var_dict.items():
 
             lb = None if lb == -inf else lb
@@ -90,14 +91,28 @@ class SCIPSolver(Solver):
         self.variables.extend(var_dict.keys())
 
     def add_constraints(self, constr_dict):
-
+        
+        self.problem.freeTransform()
         for constr_id, (lhs, sense, rhs) in constr_dict.items():
             expr = quicksum(self._vars_dict[var_id] * coeff for var_id, coeff in lhs.items())
             constr = sense_mapping[sense](expr,rhs)
             self._cons_dict[constr_id] = self.problem.addCons(constr, name=constr_id)
 
         self.constraints.extend(constr_dict.keys())
- 
+
+    def remove_constraint(self, constr_id):
+        """ Remove a constraint from the current problem.
+
+        Arguments:
+            constr_id (str): constraint identifier
+        """
+
+        if constr_id in self.constraints:
+            self.problem.freeTransform()
+            self.problem.delCons(self._cons_dict[constr_id])
+            del self._cons_dict[constr_id]
+            self.constraints.remove(constr_id)
+
 
     def set_objective(self, objective, minimize=True):
 
