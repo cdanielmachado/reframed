@@ -60,21 +60,21 @@ def llFBA(model, objective=None, minimize=False, constraints=None, internal=None
 
         for r_id in internal:
             a, g = 'a' + r_id, 'g' + r_id
-            solver.add_variable(g, update=False)
-            solver.add_variable(a, 0, 1, vartype=VarType.BINARY, update=False)
+            solver.add_variable(g)
+            solver.add_variable(a, 0, 1, vartype=VarType.BINARY)
         solver.update()
 
         for r_id in internal:
             a, g = 'a' + r_id, 'g' + r_id
-            solver.add_constraint('c1_' + r_id, {a: M, r_id: -1}, '<', M, update=False)
-            solver.add_constraint('c2_' + r_id, {a: -M, r_id: 1}, '<', 0, update=False)
-            solver.add_constraint('c3_' + r_id, {a: M + 1, g: 1}, '>', 1, update=False)
-            solver.add_constraint('c4_' + r_id, {a: M + 1, g: 1}, '<', M, update=False)
+            solver.add_constraint('c1_' + r_id, {a: M, r_id: -1}, '<', M)
+            solver.add_constraint('c2_' + r_id, {a: -M, r_id: 1}, '<', 0)
+            solver.add_constraint('c3_' + r_id, {a: M + 1, g: 1}, '>', 1)
+            solver.add_constraint('c4_' + r_id, {a: M + 1, g: 1}, '<', M)
         solver.update()
 
         for i, row in enumerate(Nint):
             expr = {'g' + r_id: coeff for r_id, coeff in zip(internal, row) if abs(coeff) > abstol}
-            solver.add_constraint(f'n{i}', expr, '=', 0, update=False)
+            solver.add_constraint(f'n{i}', expr, '=', 0)
 
         solver.update()
 
@@ -153,10 +153,10 @@ def TFA(model, deltaG0, sdeltaG0=None, concentrations=None, concentration_max=1e
 
         for r_id in model.reactions:
             if r_id in deltaG0:
-                solver.add_variable('y_' + r_id, 0, 1, vartype=VarType.BINARY, update=False)
-                solver.add_variable('dG_' + r_id, update=False)
+                solver.add_variable('y_' + r_id, 0, 1, vartype=VarType.BINARY)
+                solver.add_variable('dG_' + r_id)
                 dG0_min, dG0_max = deltaG0[r_id] - sdeltaG0[r_id], deltaG0[r_id] + sdeltaG0[r_id]
-                solver.add_variable('dG0_' + r_id, dG0_min, dG0_max, update=False)
+                solver.add_variable('dG0_' + r_id, dG0_min, dG0_max)
 
                 for m_id in model.reactions[r_id].stoichiometry:
                     if m_id not in excluded and m_id not in included:
@@ -165,23 +165,21 @@ def TFA(model, deltaG0, sdeltaG0=None, concentrations=None, concentration_max=1e
                             ln_max_j = np.log(concentrations[m_id] * sqrt(max_fold_change))
                         else:
                             ln_min_j, ln_max_j = ln_min, ln_max
-                        solver.add_variable('ln_' + m_id, ln_min_j, ln_max_j, update=False)
+                        solver.add_variable('ln_' + m_id, ln_min_j, ln_max_j)
                         included.append(m_id)
 
         solver.update()
 
         for r_id in model.reactions:
             if r_id in deltaG0:
-                solver.add_constraint('lb_' + r_id, {r_id: 1, 'y_' + r_id: bigM}, '>', 0, update=False)
-                solver.add_constraint('ub_' + r_id, {r_id: 1, 'y_' + r_id: bigM}, '<', bigM, update=False)
-                solver.add_constraint('lb_dG_' + r_id, {'dG_' + r_id: -1, 'y_' + r_id: bigM}, '>', 0,
-                                      update=False)
-                solver.add_constraint('ub_dG_' + r_id, {'dG_' + r_id: -1, 'y_' + r_id: bigM}, '<', bigM,
-                                      update=False)
+                solver.add_constraint('lb_' + r_id, {r_id: 1, 'y_' + r_id: bigM}, '>', 0)
+                solver.add_constraint('ub_' + r_id, {r_id: 1, 'y_' + r_id: bigM}, '<', bigM)
+                solver.add_constraint('lb_dG_' + r_id, {'dG_' + r_id: -1, 'y_' + r_id: bigM}, '>', 0)
+                solver.add_constraint('ub_dG_' + r_id, {'dG_' + r_id: -1, 'y_' + r_id: bigM}, '<', bigM)
                 lhs = {'ln_' + m_id: RT * coeff for m_id, coeff in model.reactions[r_id].stoichiometry.items()
                        if m_id in included}
                 lhs.update({'dG0_' + r_id: 1, 'dG_' + r_id: -1})
-                solver.add_constraint('dGsum_' + r_id, lhs, '=', 0, update=False)
+                solver.add_constraint('dGsum_' + r_id, lhs, '=', 0)
 
         solver.update()
 
@@ -331,9 +329,9 @@ def NET(model, deltaG0, sdeltaG0=None, concentrations=None, concentration_max=1e
                 elif reaction_directions[r_id] > 0:
                     dG_min, dG_max = -inf, 0
 
-            solver.add_variable('dG_' + r_id, dG_min, dG_max, update=False)
+            solver.add_variable('dG_' + r_id, dG_min, dG_max)
             dG0_min, dG0_max = deltaG0[r_id] - sdeltaG0[r_id], deltaG0[r_id] + sdeltaG0[r_id]
-            solver.add_variable('dG0_' + r_id, dG0_min, dG0_max, update=False)
+            solver.add_variable('dG0_' + r_id, dG0_min, dG0_max)
 
             for m_id in model.reactions[r_id].stoichiometry:
                 if m_id not in excluded and m_id not in included:
@@ -342,7 +340,7 @@ def NET(model, deltaG0, sdeltaG0=None, concentrations=None, concentration_max=1e
                         ln_max_j = np.log(concentrations[m_id] * sqrt(fold_change))
                     else:
                         ln_min_j, ln_max_j = ln_min, ln_max
-                    solver.add_variable('ln_' + m_id, ln_min_j, ln_max_j, update=False)
+                    solver.add_variable('ln_' + m_id, ln_min_j, ln_max_j)
                     included.append(m_id)
 
     solver.update()
@@ -352,7 +350,7 @@ def NET(model, deltaG0, sdeltaG0=None, concentrations=None, concentration_max=1e
             lhs = {'ln_' + m_id: RT * coeff for m_id, coeff in model.reactions[r_id].stoichiometry.items()
                    if m_id in included}
             lhs.update({'dG0_' + r_id: 1, 'dG_' + r_id: -1})
-            solver.add_constraint('dGsum_' + r_id, lhs, '=', 0, update=False)
+            solver.add_constraint('dGsum_' + r_id, lhs, '=', 0)
 
     solver.update()
 

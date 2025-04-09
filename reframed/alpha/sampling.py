@@ -28,15 +28,15 @@ def rpFBA(model, min_growth=0.1, reactions=None, constraints=None, solver=None):
         for r_id in reactions:
             if model.reactions[r_id].reversible:
                 pos, neg = r_id + '+', r_id + '-'
-                solver.add_variable(pos, 0, inf, update=False)
-                solver.add_variable(neg, 0, inf,  update=False)
+                solver.add_variable(pos, 0, inf)
+                solver.add_variable(neg, 0, inf)
         solver.update()
 
         for r_id in reactions:
             if model.reactions[r_id].reversible:
                 pos, neg = r_id + '+', r_id + '-'
-                solver.add_constraint('c' + pos, {r_id: -1, pos: 1}, '>', 0, update=False)
-                solver.add_constraint('c' + neg, {r_id: 1, neg: 1}, '>', 0, update=False)
+                solver.add_constraint('c' + pos, {r_id: -1, pos: 1}, '>', 0)
+                solver.add_constraint('c' + neg, {r_id: 1, neg: 1}, '>', 0)
         solver.update()
 
     objective = dict()

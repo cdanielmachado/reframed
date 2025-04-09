@@ -57,30 +57,30 @@ def minimal_medium(model, exchange_reactions=None, direction=-1, min_mass_weight
 
     if milp:
         for r_id in exchange_reactions:
-            solver.add_variable('y_' + r_id, 0, 1, vartype=VarType.BINARY, update=False)
+            solver.add_variable('y_' + r_id, 0, 1, vartype=VarType.BINARY)
     else:
         for r_id in exchange_reactions:
-            solver.add_variable('f_' + r_id, 0, max_uptake, update=False)
+            solver.add_variable('f_' + r_id, 0, max_uptake)
 
     solver.update()
 
     if milp:
         for r_id in exchange_reactions:
             if direction < 0:
-                solver.add_constraint('c_' + r_id, {r_id: 1, 'y_' + r_id: max_uptake}, '>', 0, update=False)
+                solver.add_constraint('c_' + r_id, {r_id: 1, 'y_' + r_id: max_uptake}, '>', 0)
             else:
-                solver.add_constraint('c_' + r_id, {r_id: 1, 'y_' + r_id: -max_uptake}, '<', 0, update=False)
+                solver.add_constraint('c_' + r_id, {r_id: 1, 'y_' + r_id: -max_uptake}, '<', 0)
 
         if max_compounds:
             lhs = {'y_' + r_id: 1 for r_id in exchange_reactions}
-            solver.add_constraint('max_cmpds', lhs, '<', max_compounds, update=False)
+            solver.add_constraint('max_cmpds', lhs, '<', max_compounds)
 
     else:
         for r_id in exchange_reactions:
             if direction < 0:
-                solver.add_constraint('c_' + r_id, {r_id: 1, 'f_' + r_id: 1}, '>', 0, update=False)
+                solver.add_constraint('c_' + r_id, {r_id: 1, 'f_' + r_id: 1}, '>', 0)
             else:
-                solver.add_constraint('c_' + r_id, {r_id: 1, 'f_' + r_id: -1}, '<', 0, update=False)
+                solver.add_constraint('c_' + r_id, {r_id: 1, 'f_' + r_id: -1}, '<', 0)
 
     solver.update()
 

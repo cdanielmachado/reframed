@@ -73,27 +73,27 @@ def build_problem(community, growth=1, bigM=1000):
 
     # create biomass variables
     for org_id in community.organisms:
-        solver.add_variable(f"x_{org_id}", 0, 1, update=False)
+        solver.add_variable(f"x_{org_id}", 0, 1)
 
     # create all community reactions
     for r_id, reaction in model.reactions.items():
         if reaction.reaction_type == ReactionType.EXCHANGE:
-            solver.add_variable(r_id, reaction.lb, reaction.ub, update=False)
+            solver.add_variable(r_id, reaction.lb, reaction.ub)
         else:
             lb = -inf if reaction.lb < 0 else 0
             ub = inf if reaction.ub > 0 else 0
-            solver.add_variable(r_id, lb, ub, update=False)
+            solver.add_variable(r_id, lb, ub)
 
     solver.update()
 
     # sum biomass = 1
     solver.add_constraint("abundance", {f"x_{org_id}": 1 for org_id in community.organisms},
-                          rhs=1, update=False)
+                          rhs=1)
 
     # S.v = 0
     table = model.metabolite_reaction_lookup()
     for m_id in model.metabolites:
-        solver.add_constraint(m_id, table[m_id], update=False)
+        solver.add_constraint(m_id, table[m_id])
 
     # organism-specific constraints
     for org_id, organism in community.organisms.items():
@@ -106,17 +106,17 @@ def build_problem(community, growth=1, bigM=1000):
 
             # growth = mu * X
             if r_id == organism.biomass_reaction:
-                solver.add_constraint(f"g_{org_id}", {f"x_{org_id}": growth, new_id: -1}, update=False)
+                solver.add_constraint(f"g_{org_id}", {f"x_{org_id}": growth, new_id: -1})
             # lb * X < R < ub * X
             else:
                 lb = -bigM if isinf(reaction.lb) else reaction.lb
                 ub = bigM if isinf(reaction.ub) else reaction.ub
 
                 if lb != 0:
-                    solver.add_constraint(f"lb_{new_id}", {f"x_{org_id}": lb, new_id: -1}, '<', 0, update=False)
+                    solver.add_constraint(f"lb_{new_id}", {f"x_{org_id}": lb, new_id: -1}, '<', 0)
 
                 if ub != 0:
-                    solver.add_constraint(f"ub_{new_id}", {f"x_{org_id}": ub, new_id: -1}, '>', 0, update=False)
+                    solver.add_constraint(f"ub_{new_id}", {f"x_{org_id}": ub, new_id: -1}, '>', 0)
 
     solver.update()
 

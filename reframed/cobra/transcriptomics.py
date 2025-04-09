@@ -94,14 +94,14 @@ def marge(model, expr_a=None, expr_b=None, rel_expr=None, constraints_a=None, co
 
     for r_id, reaction in model.reactions.items():
         lb_a, ub_a = constraints_a.get(r_id, (reaction.lb, reaction.ub))
-        solver.add_variable(r_id + '_a', lb_a, ub_a, update=False)
+        solver.add_variable(r_id + '_a', lb_a, ub_a)
 
         lb_b, ub_b = constraints_b.get(r_id, (reaction.lb, reaction.ub))
-        solver.add_variable(r_id + '_b', lb_b, ub_b, update=False)
+        solver.add_variable(r_id + '_b', lb_b, ub_b)
 
     for g_id in common_genes:
-        solver.add_variable(g_id + '_+', 0, inf, update=False)
-        solver.add_variable(g_id + '_-', 0, inf, update=False)
+        solver.add_variable(g_id + '_+', 0, inf)
+        solver.add_variable(g_id + '_-', 0, inf)
 
     solver.update()
 
@@ -109,10 +109,10 @@ def marge(model, expr_a=None, expr_b=None, rel_expr=None, constraints_a=None, co
 
     for m_id in model.metabolites:
         stoich_a = {r_id + '_a': val for r_id, val in table[m_id].items()}
-        solver.add_constraint(m_id + '_a', stoich_a, update=False)
+        solver.add_constraint(m_id + '_a', stoich_a)
 
         stoich_b = {r_id + '_b': val for r_id, val in table[m_id].items()}
-        solver.add_constraint(m_id + '_b', stoich_b, update=False)
+        solver.add_constraint(m_id + '_b', stoich_b)
 
     objective = {}
 
@@ -126,11 +126,11 @@ def marge(model, expr_a=None, expr_b=None, rel_expr=None, constraints_a=None, co
         u_id_a = 'u_' + g_id[len(gene_prefix):] + '_a'
         u_id_b = 'u_' + g_id[len(gene_prefix):] + '_b'
 
-        solver.add_constraint(g_c_p, {u_id_b: expr_a[g_id], u_id_a: -expr_b[g_id], g_id_m: 1}, '>', 0, update=False)
-        solver.add_constraint(g_c_m, {u_id_b: expr_a[g_id], u_id_a: -expr_b[g_id], g_id_p: -1}, '<', 0, update=False)
+        solver.add_constraint(g_c_p, {u_id_b: expr_a[g_id], u_id_a: -expr_b[g_id], g_id_m: 1}, '>', 0)
+        solver.add_constraint(g_c_m, {u_id_b: expr_a[g_id], u_id_a: -expr_b[g_id], g_id_p: -1}, '<', 0)
 
-    solver.add_constraint("proteome_a", {"proteome_synth_a": 1}, '<', proteome_a, update=False)
-    solver.add_constraint("proteome_b", {"proteome_synth_b": 1}, '<', proteome_b, update=False)
+    solver.add_constraint("proteome_a", {"proteome_synth_a": 1}, '<', proteome_a)
+    solver.add_constraint("proteome_b", {"proteome_synth_b": 1}, '<', proteome_b)
 
     solver.update()
 
@@ -140,7 +140,7 @@ def marge(model, expr_a=None, expr_b=None, rel_expr=None, constraints_a=None, co
         raise RuntimeError("Failed to solve first problem.")
 
     obj1_max = sol.fobj * (1 + step2_relax)
-    solver.add_constraint("obj1", objective, '<', obj1_max, update=True)
+    solver.add_constraint("obj1", objective, '<', obj1_max)
 
     if not get_ranges:
 
@@ -249,15 +249,15 @@ def GIMME(model, gene_exp, cutoff=25, growth_frac=0.9, constraints=None, parsimo
     for r_id in model.reactions:
         if model.reactions[r_id].reversible:
             pos, neg = r_id + '+', r_id + '-'
-            solver.add_variable(pos, 0, inf, update=False)
-            solver.add_variable(neg, 0, inf, update=False)
+            solver.add_variable(pos, 0, inf)
+            solver.add_variable(neg, 0, inf)
     solver.update()
 
     for r_id in model.reactions:
         if model.reactions[r_id].reversible:
             pos, neg = r_id + '+', r_id + '-'
-            solver.add_constraint('c' + pos, {r_id: -1, pos: 1}, '>', 0, update=False)
-            solver.add_constraint('c' + neg, {r_id: 1, neg: 1}, '>', 0, update=False)
+            solver.add_constraint('c' + pos, {r_id: -1, pos: 1}, '>', 0)
+            solver.add_constraint('c' + neg, {r_id: 1, neg: 1}, '>', 0)
     solver.update()
 
     objective = dict()
@@ -286,7 +286,6 @@ def GIMME(model, gene_exp, cutoff=25, growth_frac=0.9, constraints=None, parsimo
                 objective[r_id] = 1
 
         solution = solver.solve(objective, minimize=True, constraints=constraints)
-        solver.remove_constraint('obj')
         solution.pre_solution = pre_solution
 
     for r_id in model.reactions:

@@ -395,6 +395,11 @@ def sanitize_id(identifier):
 def parse_gpr_rule(rule, prefix=None):
     if not rule:
         return None
+    
+    if isinstance(rule, list):
+        if len(rule) != 1:
+            raise RuntimeWarning(f'Unexpected number of items in GPR:{rule}')
+        rule = rule[0]
 
     rule = rule.replace('(', '( ').replace(')', ' )')
 
