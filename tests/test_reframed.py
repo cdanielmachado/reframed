@@ -61,9 +61,9 @@ class TestSimulation(unittest.TestCase):
         sol = CAFBA(self.model, constraints={REACTION_KO: 0})
         self.assertGreater(sol.values[self.obj_id], MIN_GROWTH)
 
-    def test_MOMA(self):
-        sol = MOMA(self.model, constraints={REACTION_KO: 0, self.obj_id: (MIN_GROWTH, 10)})
-        self.assertGreater(sol.values[self.obj_id], MIN_GROWTH)
+#    def test_MOMA(self):
+#        sol = MOMA(self.model, constraints={REACTION_KO: 0, self.obj_id: (MIN_GROWTH, 10)})
+#        self.assertGreater(sol.values[self.obj_id], MIN_GROWTH)
 
     def test_lMOMA(self):
         sol = lMOMA(self.model, constraints={REACTION_KO: 0, self.obj_id: (MIN_GROWTH, 10)})

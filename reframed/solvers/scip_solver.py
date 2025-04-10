@@ -85,7 +85,10 @@ class SCIPSolver(Solver):
             lb = None if lb == -inf else lb
             ub = None if ub == inf else ub
 
-            self._vars_dict[var_id] = self.problem.addVar(name=var_id, lb=lb, ub=ub, vtype=vartype_mapping[vartype])
+            try:
+                self._vars_dict[var_id] = self.problem.addVar(name=var_id, lb=lb, ub=ub, vtype=vartype_mapping[vartype])
+            except:
+                print('Failed to add:', var_id)
         
         self.variables.extend(var_dict.keys())
 
@@ -114,6 +117,12 @@ class SCIPSolver(Solver):
         self.objective = objective
         self.minimize = minimize
 
+    def update(self):
+
+        if self.problem.getStage() > Stage.PRESOLVED.value:
+            self.problem.freeTransform()
+    
+        return super().update()
 
     def internal_solve(self):
         

@@ -351,15 +351,16 @@ def ROOM(model, reference=None, constraints=None, wt_constraints=None, reactions
     U = 1e6
     L = -1e6
 
-    if not solver:
-        solver = solver_instance(model)
 
     if reference is None:
-        wt_solution = pFBA(model, constraints=wt_constraints, solver=solver)
+        wt_solution = pFBA(model, constraints=wt_constraints)
         reference = wt_solution.values
 
     if reactions is None:
         reactions = reference.keys()
+    
+    if not solver:
+        solver = solver_instance(model)
 
     objective = dict()
     if not hasattr(solver, 'ROOM_flag'):
