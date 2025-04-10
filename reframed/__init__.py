@@ -19,7 +19,7 @@ from .io.cache import ModelCache
 
 from .cobra.variability import FVA, blocked_reactions
 from .cobra.plotting import plot_flux_envelope
-from .cobra.simulation import FBA, pFBA, FBrAtio, CAFBA, MOMA, lMOMA, ROOM
+from .cobra.simulation import FBA, pFBA, FBrAtio, CAFBA, lMOMA, ROOM
 from .cobra.thermodynamics import TFA, TVA, llFBA, NET
 from .cobra.medium import minimal_medium
 from .cobra.knockout import gene_knockout, hard_knockout, reaction_knockout, essential_genes, essential_reactions

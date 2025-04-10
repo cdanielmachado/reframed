@@ -3,7 +3,7 @@
 Author: Daniel Machado
 
 """
-from .simulation import FBA, pFBA, CAFBA, MOMA, lMOMA, ROOM
+from .simulation import FBA, pFBA, CAFBA, lMOMA, ROOM
 from ..solvers import solver_instance
 from ..solvers.solution import Status
 
@@ -15,7 +15,7 @@ def gene_knockout(model, genes, method='FBA', reference=None, constraints=None, 
         model (CBModel): model
         genes (list): genes to delete
         method (str): any available simulation method: FBA (default), pFBA, CAFBA, MOMA, lMOMA, ROOM
-        reference (dict): reference flux distribution for MOMA, lMOMA or ROOM (optional)
+        reference (dict): reference flux distribution for lMOMA or ROOM (optional)
         constraints (dict): additional constraints
         solver (Solver): solver instance instantiated with the model, for speed (optional)
         ignore_silent (bool): ignore knockout if no reactions are affected (default: False)
