@@ -239,42 +239,6 @@ def CAFBA(model, objective=None, minimize=False, wc=0, we=8.3e-4, wr=0.169, pmax
     return solution
 
 
-def MOMA(model, reference=None, constraints=None, reactions=None, solver=None):
-    """ Run a Minimization Of Metabolic Adjustment (MOMA) simulation:
-
-    Arguments:
-        model (CBModel): a constraint-based model
-        reference (dict): reference flux distribution (optional)
-        constraints (dict): environmental or additional constraints (optional)
-        reactions (list): list of reactions to include in the objective (optional, default: all)
-        solver (Solver): solver instance instantiated with the model, for speed (optional)
-
-    Returns:
-        Solution: solution
-    """
-
-    if reference is None:
-        wt_solution = pFBA(model)
-        reference = wt_solution.values
-    else:
-        reactions = reference.keys()
-
-    if reactions is None:
-        reactions = model.reactions.keys()
-
-    quad_obj = {(r_id, r_id): 1 for r_id in reactions}
-    lin_obj = {r_id: -2 * reference[r_id] for r_id in reactions}
-
-    if not solver:
-        solver = solver_instance(model)
-
-    solution = solver.solve(lin_obj, quadratic=quad_obj, minimize=True, constraints=constraints)
-
-    solution.reference = reference
-
-    return solution
-
-
 def lMOMA(model, reference=None, constraints=None, reactions=None, solver=None):
     """ Run a (linear version of) Minimization Of Metabolic Adjustment (lMOMA) simulation:
 
