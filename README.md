@@ -37,9 +37,17 @@ SteadyCom | Community simulation | (Chan et al, 2017)
 
 Please check documentation with installation and usage instructions [here](https://reframed.readthedocs.io) or try the live demo [here](https://mybinder.org/v2/gh/cdanielmachado/teaching/master?filepath=fba.ipynb).
 
+Latest version was tested with:
+
+- python 3.13
+- libsbml 5.20.4
+- PySCIPOpt 5.4.1
+- Gurobi 12.0.1
+- CPLEX 22.1.1 (with python 3.10)
+
 ### Credits and License
 
-Developed by Daniel Machado at the European Molecular Biology Laboratory (2019).
+Developed by Daniel Machado at the Norwegian University of Science and Technology (2025).
 
 **ReFramed** is a refactored version of the [**framed**](https://github.com/cdanielmachado/framed) library.
 
