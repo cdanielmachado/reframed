@@ -69,7 +69,7 @@ class GurobiSolver(Solver):
 
         for constr_id, (lhs, sense, rhs) in constr_dict.items():
             expr = quicksum(coeff * self.problem.getVarByName(r_id) for r_id, coeff in lhs.items() if coeff)
-            self.problem.addConstr(expr, sense_mapping[sense], rhs, constr_id)
+            self.problem.addLConstr(expr, sense_mapping[sense], rhs, constr_id)
         
         self.constraints.extend(constr_dict.keys())
         self.problem.update()

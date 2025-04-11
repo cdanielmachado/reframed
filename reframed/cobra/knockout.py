@@ -115,14 +115,13 @@ def reaction_knockout(model, reactions, method='FBA', reference=None, constraint
         'pFBA': pFBA,
         'CAFBA': CAFBA,
         'lMOMA': lMOMA,
-        'MOMA': MOMA,
         'ROOM': ROOM
     }
 
     if method in {'FBA', 'pFBA', 'CAFBA'}:
         function = methods[method]
         solution = function(model, constraints=_constraints, solver=solver)
-    elif method in {'lMOMA', 'MOMA', 'ROOM'}:
+    elif method in {'lMOMA', 'ROOM'}:
         function = methods[method]
         solution = function(model, reference, constraints=_constraints, solver=solver)
     else:

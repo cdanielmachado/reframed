@@ -15,7 +15,7 @@ TEST_MODEL_FBC2 = model_path + 'model_fbc2.xml.gz'
 MIN_GROWTH = 0.1
 REACTION_KO = 'R_PGI'
 
-#set_default_solver("optlang")
+#set_default_solver("cplex")
 
 
 class TestSBML(unittest.TestCase):
