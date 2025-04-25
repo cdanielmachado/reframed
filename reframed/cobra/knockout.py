@@ -14,7 +14,7 @@ def gene_knockout(model, genes, method='FBA', reference=None, constraints=None, 
     Arguments:
         model (CBModel): model
         genes (list): genes to delete
-        method (str): any available simulation method: FBA (default), pFBA, CAFBA, MOMA, lMOMA, ROOM
+        method (str): any available simulation method: FBA (default), pFBA, CAFBA, lMOMA, ROOM
         reference (dict): reference flux distribution for lMOMA or ROOM (optional)
         constraints (dict): additional constraints
         solver (Solver): solver instance instantiated with the model, for speed (optional)
@@ -90,8 +90,8 @@ def reaction_knockout(model, reactions, method='FBA', reference=None, constraint
     Arguments:
         model (CBModel): model
         reactions (list): reactions to delete
-        method (str): any available simulation method: FBA (default), pFBA, CAFBA, MOMA, lMOMA, ROOM
-        reference (dict): reference flux distribution for MOMA, lMOMA or ROOM (optional)
+        method (str): any available simulation method: FBA (default), pFBA, CAFBA, lMOMA, ROOM
+        reference (dict): reference flux distribution for lMOMA or ROOM (optional)
         constraints (dict): additional constraints
         solver (Solver): solver instance instantiated with the model, for speed (optional)
 

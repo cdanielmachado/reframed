@@ -41,4 +41,9 @@ setup(
     url='https://github.com/cdanielmachado/reframed',
     version='1.5.4',
     zip_safe=False,
+    entry_points={ 
+        "console_scripts": [
+            "fba=reframed.cli.cli:main",
+        ],
+    },
 )
