@@ -38,8 +38,7 @@ def FBA(model, objective=None, minimize=False, constraints=None, solver=None, ge
     return solution
 
 
-def pFBA(model, objective=None, obj_frac=None, minimize=False, constraints=None, reactions=None, solver=None,
-         cleanup=True):
+def pFBA(model, objective=None, obj_frac=None, minimize=False, constraints=None, reactions=None, solver=None):
     """ Run a parsimonious Flux Balance Analysis (pFBA) simulation:
 
     Arguments:
@@ -50,7 +49,6 @@ def pFBA(model, objective=None, obj_frac=None, minimize=False, constraints=None,
         constraints (dict): environmental or additional constraints (optional)
         reactions (list): list of reactions to be minimized (optional, default: all)
         solver (Solver): solver instance instantiated with the model, for speed (optional)
-        cleanup (bool): remove temporary variables from solution (default: True)
 
     Returns:
         Solution: solution
@@ -101,15 +99,8 @@ def pFBA(model, objective=None, obj_frac=None, minimize=False, constraints=None,
         else:
             objective[r_id] = 1
 
-    solution = solver.solve(objective, minimize=True, constraints=constraints)
+    solution = solver.solve(objective, minimize=True, constraints=constraints, get_values=list(model.reactions))
     solution.pre_solution = pre_solution
-
-    if cleanup:
-        for r_id in reactions:
-            if model.reactions[r_id].reversible:
-                pos, neg = r_id + '_p', r_id + '_n'
-                del solution.values[pos]
-                del solution.values[neg]
 
     return solution
 
@@ -284,8 +275,7 @@ def lMOMA(model, reference=None, constraints=None, reactions=None, solver=None):
         objective[d_pos] = 1
         objective[d_neg] = 1
 
-    solution = solver.solve(objective, minimize=True, constraints=constraints)
-
+    solution = solver.solve(objective, minimize=True, constraints=constraints, get_values=list(model.reactions))
     solution.reference = reference
 
     return solution

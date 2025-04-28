@@ -6,6 +6,7 @@ import pandas as pd
 from reframed import set_default_solver, load_cbmodel, Environment, FBA, pFBA, FVA
 from reframed.cobra.knockout import gene_knockout
 from reframed.solvers import solver_instance
+from reframed.solvers.solution import Status
 
 
 def load_media_db(filename):
@@ -26,7 +27,7 @@ def load_media_db(filename):
 
 def create_env(model, medium, media_db, media_has_bounds, max_uptake):
     env = Environment.from_compounds(media_db[medium], max_uptake=max_uptake)
-    env = env.apply(model, inplace=False, exclusive=True)
+    env = env.apply(model, inplace=False, exclusive=True, warning=False)
 
     if media_has_bounds:
         for cpd, bound in media_db[medium].items():
@@ -46,10 +47,12 @@ def save_solutions(solutions, output=None):
     if not output:
         output = 'result.tsv'
 
-    # convert solutions to dataframe
-    df = pd.DataFrame()
-
-    df.to_csv(output, sep='\t')
+    if not solutions:
+        print('No solutions found.')
+    else:
+        df = pd.DataFrame(solutions)
+        df.sort_index(inplace=True)
+        df.to_csv(output, header=(len(df.columns) > 1), sep='\t')
 
 def run(modelfile, objective=None, method='FBA', growth_frac=0, knockout=None, constraints=None, output=None, 
         media=None, max_uptake=10, mediadb=None):
@@ -74,32 +77,40 @@ def run(modelfile, objective=None, method='FBA', growth_frac=0, knockout=None, c
     if knockout:
         knockout = knockout.split(',')
 
-    solutions = []
+    solutions = {}
 
 
     for medium in media:
         
-        if medium is None:
-            medium = 'complete'
-            env = Environment.complete(model, inplace=False, max_uptake=max_uptake)
-        else:
+        if medium:
             env = create_env(model, medium, media_db, media_has_bounds, max_uptake)
+        else:
+            medium = 'default'
+            env = {}
 
         if constraints is not None:
             env.update(add_constraints)
 
         if knockout:
             for genes in knockout:
-                sol = gene_knockout(model, genes.split('+'), method=method, constraints=env, solver=solver)
-                solutions.append(sol)
+                to_delete = [f'G_{x}' for x in genes.split('+')]
+                sol = gene_knockout(model, to_delete, method=method, constraints=env)#, solver=solver) can't reuse solver until remove_constraint is implemented
+                if sol and (sol.status == Status.OPTIMAL or sol.status == Status.SUBOPTIMAL):
+                    solutions[f'{medium}_{genes}'] = sol.values
         else:
-            if method == FBA:
+            sol = None
+
+            if method == 'FBA':
                 sol = FBA(model, objective=objective, constraints=env, solver=solver)
-            elif method == pFBA:
+            elif method == 'pFBA':
                 sol = pFBA(model, objective=objective, constraints=env, solver=solver)
             elif method == 'FVA':
-                sol = FVA(model,objective=objective, constraints=env, growth_frac=growth_frac, solver=solver)
-            solutions.append(sol)
+                var = FVA(model, constraints=env, obj_frac=growth_frac, solver=solver)
+                solutions[f'{medium}_lb'] = {x: y[0] for x, y in var.items()}
+                solutions[f'{medium}_ub'] = {x: y[1] for x, y in var.items()}
+
+            if sol and (sol.status == Status.OPTIMAL or sol.status == Status.SUBOPTIMAL):
+                solutions[f'{medium}'] = sol.values
 
     save_solutions(solutions, output)
 
@@ -130,7 +141,7 @@ def main():
         """
     ))
 
-    method.add_argument('-c', '--constraints', dest='constraints', metavar='FILENAME', help=textwrap.dedent(
+    parser.add_argument('-c', '--constraints', dest='constraints', metavar='FILENAME', help=textwrap.dedent(
         """
         TSV file with additional constraints to the solution space.
         Can also be used to override the uptake rates from the growth medium. 
@@ -202,20 +213,22 @@ def main():
     
     if args.objective and args.knockout:
         raise RuntimeError('Changing objective for gene knockouts not currently implemented.')
+
+    if args.objective and method == 'FVA':
+        raise RuntimeError('Changing objective for FVA not currently implemented.')
     
     if method == 'lMOMA' and not args.knockout: 
         raise RuntimeError('lMOMA requires at least one gene knockout.')
 
     run(
-        model=args.models,
+        modelfile=args.model,
         objective=args.objective,
         method=method,
-        growth_frac=(args.fva if 0.0 <= args.fva <= 1.0 else 0.0),
-        lmoma=args.lmoma,
+        growth_frac=args.fva,
         knockout=args.knockout,
         constraints=args.constraints,
         output=args.output,
-        medium=args.medium,
+        media=args.medium,
         max_uptake=args.uptake,
         mediadb=args.mediadb,
     )
