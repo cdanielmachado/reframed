@@ -87,6 +87,11 @@ class CplexSolver(Solver):
         self.problem.linear_constraints.add(lin_expr=lhs_all, senses=sense_all, rhs=rhs_all, names=constr_ids)
         self.constraints.extend(constr_ids)
 
+    def remove_constraint(self, constr_id):
+        if constr_id in self.constraints:
+            self.problem.linear_constraints.delete(constr_id)
+        else:
+            print('Constraint not in problem:', constr_id)
 
     def set_objective(self, objective, minimize=True):
 

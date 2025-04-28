@@ -101,6 +101,8 @@ def pFBA(model, objective=None, obj_frac=None, minimize=False, constraints=None,
 
     solution = solver.solve(objective, minimize=True, constraints=constraints, get_values=list(model.reactions))
     solution.pre_solution = pre_solution
+    
+    solver.remove_constraint('obj')
 
     return solution
 

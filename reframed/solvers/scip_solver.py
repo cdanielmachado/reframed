@@ -100,7 +100,21 @@ class SCIPSolver(Solver):
             self._cons_dict[constr_id] = self.problem.addCons(constr, name=constr_id)
 
         self.constraints.extend(constr_dict.keys())
+
+    def find_constraint(self, constr_id):
+        for constr in self.problem.getConss():
+            if constr.name == constr_id:
+                return constr
  
+    def remove_constraint(self, constr_id):
+
+        if self.problem.getStage() > Stage.PRESOLVED.value:
+            self.problem.freeTransform()
+    
+        if constr_id in self.constraints:
+            self.problem.delCons(self.find_constraint(constr_id))
+        else:
+            print('Constraint not in problem:', constr_id)
 
     def set_objective(self, objective, minimize=True):
 

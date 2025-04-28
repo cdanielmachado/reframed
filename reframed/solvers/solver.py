@@ -68,6 +68,11 @@ class Solver(object):
 
     def add_constraints(self, constr_dict):
         """ Solver specific implementation """
+        pass
+
+    def remove_constraint(self, constr_id):
+        """ Solver specific implementation """
+        pass
 
     def update(self):
         """ Update internal structure. Used for efficient lazy updating. """

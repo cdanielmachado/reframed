@@ -94,7 +94,7 @@ def run(modelfile, objective=None, method='FBA', growth_frac=0, knockout=None, c
         if knockout:
             for genes in knockout:
                 to_delete = [f'G_{x}' for x in genes.split('+')]
-                sol = gene_knockout(model, to_delete, method=method, constraints=env)#, solver=solver) can't reuse solver until remove_constraint is implemented
+                sol = gene_knockout(model, to_delete, method=method, constraints=env, solver=solver)
                 if sol and (sol.status == Status.OPTIMAL or sol.status == Status.SUBOPTIMAL):
                     solutions[f'{medium}_{genes}'] = sol.values
         else:
