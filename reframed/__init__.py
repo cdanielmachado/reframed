@@ -4,7 +4,7 @@
 
 __author__ = "Daniel Machado"
 __email__ = 'cdanielmachado@gmail.com'
-__version__ = '1.5.4'
+__version__ = '1.6.0'
 
 
 from .core.model import Model, Metabolite, Compartment, Reaction, ReactionType

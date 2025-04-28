@@ -13,6 +13,14 @@
 libraries of the *COBRA* ecosystem including [**escher**](https://escher.github.io),
 [**cobrapy**](https://opencobra.github.io/cobrapy/), and [**optlang**](https://github.com/biosustain/optlang).
 
+### 💡 New!
+
+A new command-line interface is now available, check the help menu for details:
+
+```
+> fba -h
+```
+
 ### Available methods
 
 Name | Long name | Reference
