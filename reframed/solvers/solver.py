@@ -158,6 +158,9 @@ class Solver(object):
     def set_temporary_bounds(self, bounds):
         pass
 
+    def set_bounds(self, bounds):
+        self.set_temporary_bounds(bounds)
+
     def reset_bounds(self, bounds):
         pass
 
