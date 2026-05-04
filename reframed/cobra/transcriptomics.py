@@ -87,9 +87,6 @@ def marge(model, expr_a=None, expr_b=None, rel_expr=None, constraints_a=None, co
     max_growth_b = sol_b.values[model.biomass_reaction]
     constraints_b[model.biomass_reaction] = (max_growth_b * growth_frac_b, inf)
 
-    proteome_a = sol_a.values["proteome_synth"]
-    proteome_b = sol_b.values["proteome_synth"]
-
     solver = solver_instance()
 
     for r_id, reaction in model.reactions.items():
@@ -129,9 +126,6 @@ def marge(model, expr_a=None, expr_b=None, rel_expr=None, constraints_a=None, co
         solver.add_constraint(g_c_p, {u_id_b: expr_a[g_id], u_id_a: -expr_b[g_id], g_id_m: 1}, '>', 0)
         solver.add_constraint(g_c_m, {u_id_b: expr_a[g_id], u_id_a: -expr_b[g_id], g_id_p: -1}, '<', 0)
 
-    solver.add_constraint("proteome_a", {"proteome_synth_a": 1}, '<', proteome_a)
-    solver.add_constraint("proteome_b", {"proteome_synth_b": 1}, '<', proteome_b)
-
     solver.update()
 
     sol = solver.solve(objective, minimize=True)
@@ -142,9 +136,12 @@ def marge(model, expr_a=None, expr_b=None, rel_expr=None, constraints_a=None, co
     obj1_max = sol.fobj * (1 + step2_relax)
     solver.add_constraint("obj1", objective, '<', obj1_max)
 
+
     if not get_ranges:
 
-        objective2 = {"proteome_synth_a": 1, "proteome_synth_b": 1}
+        objective2 = {f'{x}_a': 1 for x in model.u_reactions}
+        objective2.update({f'{x}_b': 1 for x in model.u_reactions})
+
         sol2 = solver.solve(objective2, minimize=True)
 
         if sol.status != Status.OPTIMAL:
