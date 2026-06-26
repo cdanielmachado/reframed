@@ -5,9 +5,16 @@
 [![DOI](https://zenodo.org/badge/212059108.svg)](https://zenodo.org/badge/latestdoi/212059108)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/cdanielmachado/teaching/master?filepath=fba.ipynb)
 
-![ReFramed](reframed_logo.png)
 
-# ReFramed: metabolic modeling package
+
+
+# ReFramed: metabolic modeling package (deprecated)
+
+⚠️ **Note**: This package is discontinued. Please check the new package [**fluxbound**](https://github.com/cdanielmachado/fluxbound) ⚠️
+
+
+------------
+
 
 **ReFramed** implements many constraint-based simulation methods (see list below), and contains interfaces to other
 libraries of the *COBRA* ecosystem including [**escher**](https://escher.github.io),
